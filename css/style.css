@@ -8,6 +8,14 @@
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Inputs y textareas sí deben permitir selección para escribir */
+input, textarea {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 :root {
