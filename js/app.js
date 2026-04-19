@@ -1,24 +1,46 @@
 // ══════════════════════════════════════════════════════
-//  Habits App — Production
+//  Habits App — Supabase Backend
+//  Configura tus credenciales de Supabase aquí:
 // ══════════════════════════════════════════════════════
 
-const N8N_GET    = 'https://1.jisn8n.work/webhook/habits';      // GET  — fetch all rows
-const N8N_POST   = 'https://1.jisn8n.work/webhook/habits';      // POST — mark/unmark a day
-const N8N_CREATE = 'https://1.jisn8n.work/webhook/habits-new';  // POST — create new habit
+const SUPABASE_URL      = 'https://TU_PROYECTO.supabase.co';   // ← cambia esto
+const SUPABASE_ANON_KEY = 'TU_ANON_KEY';                       // ← cambia esto
 
-// Sheet columns that are NOT habits
-const SKIP_COLS = new Set(['fecha', 'Fecha', 'FECHA', 'week', 'Week', 'WEEK']);
-
-// Preset emoji palette for new habits
+// ── Preset emoji palette ──
 const EMOJIS = ['🐐','💪','💧','📚','🏃','🧘','🥗','😴','🎯','🧠','🚴','✍️'];
 
 // ── App state ──
-let allData    = [];   // array of row objects: { fecha, week, [habitKey]: 0|1, ... }
-let habits     = [];   // array of { key, name, emoji }
-let currentKey = null;
+let habits     = [];   // [{ id, name, emoji, created_at }]
+let allData    = [];   // [{ id, habit_id, fecha, value }]  — logs table
+let currentKey = null; // habit UUID
 let selDate    = todayStr();
 let selEmoji   = EMOJIS[0];
 let wChart     = null;
+
+// ══════════════════════════════════════════════════════
+//  SUPABASE REST API HELPER
+// ══════════════════════════════════════════════════════
+async function sb(path, options = {}) {
+  const { method = 'GET', body, prefer } = options;
+  const headers = {
+    'apikey':        SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    'Content-Type':  'application/json',
+    'Prefer':        prefer || 'return=representation',
+  };
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Supabase ${res.status}: ${err}`);
+  }
+  // DELETE returns 204 No Content
+  if (res.status === 204) return null;
+  return res.json();
+}
 
 // ══════════════════════════════════════════════════════
 //  UTILS
@@ -48,118 +70,67 @@ function greeting() {
   return 'Buenas noches 🌙';
 }
 
-// Extract the first emoji character from a string, if any
-function extractEmoji(str) {
-  const m = str.match(/\p{Emoji_Presentation}|\p{Extended_Pictographic}/u);
-  return m ? m[0] : null;
-}
-
 // ══════════════════════════════════════════════════════
-//  DATA PARSING
-//  Reads the sheet response and auto-discovers habits
-//  from any column that isn't Fecha/Week.
-//
-//  Sheet format expected from n8n:
-//  [ { "Fecha": "2026-04-13", "Week": 16, "🐐": 1, "20 push ups": 0 }, ... ]
-// ══════════════════════════════════════════════════════
-function parseSheetResponse(rows) {
-  if (!Array.isArray(rows) || !rows.length) return false;
-
-  const firstRow = rows[0];
-
-  // Discover habit columns = all keys that are not fecha/week
-  const habitCols = Object.keys(firstRow).filter(k => !SKIP_COLS.has(k));
-  if (!habitCols.length) return false;
-
-  // Build habits array from column headers
-  habits = habitCols.map(col => {
-    const emoji = extractEmoji(col);
-    // If the col IS just an emoji, use it as the display name too
-    const name  = col.trim();
-    return { key: col, name, emoji: emoji || '📌' };
-  });
-
-  // Normalise rows — keep original column keys as habit keys
-  allData = rows.map(r => {
-    const row = {
-      fecha: r['Fecha'] || r['fecha'] || r['FECHA'] || '',
-      week:  parseInt(r['Week'] || r['week'] || r['WEEK'] || 0),
-    };
-    habitCols.forEach(col => {
-      // Value can come as number or string "1"/"0"
-      row[col] = parseInt(r[col] ?? 0);
-    });
-    return row;
-  }).filter(r => r.fecha);
-
-  return true;
-}
-
-// ══════════════════════════════════════════════════════
-//  FALLBACK DATA (offline / demo)
-//  Column keys = exact sheet column names
+//  FALLBACK DATA (demo when Supabase not configured)
 // ══════════════════════════════════════════════════════
 function loadFallback() {
+  const id1 = 'demo-goat';
+  const id2 = 'demo-pushups';
   habits = [
-    { key: '🐐',          name: '🐐',          emoji: '🐐' },
-    { key: '20 push ups', name: '20 push ups',  emoji: '💪' },
+    { id: id1, name: '🐐 Goat Mode', emoji: '🐐' },
+    { id: id2, name: '20 Push Ups',  emoji: '💪' },
   ];
   const today = todayStr();
   allData = [
-    { fecha: '2026-04-13', week: 16, '🐐': 1, '20 push ups': 1 },
-    { fecha: '2026-04-14', week: 16, '🐐': 1, '20 push ups': 0 },
-    { fecha: '2026-04-15', week: 16, '🐐': 1, '20 push ups': 1 },
-    { fecha: '2026-04-16', week: 16, '🐐': 0, '20 push ups': 1 },
-    { fecha: '2026-04-17', week: 16, '🐐': 1, '20 push ups': 1 },
-    { fecha: '2026-04-18', week: 16, '🐐': 1, '20 push ups': 1 },
-    { fecha: today,        week: 17, '🐐': 1, '20 push ups': 0 },
+    { habit_id: id1, fecha: '2026-04-13', value: 1 },
+    { habit_id: id2, fecha: '2026-04-13', value: 1 },
+    { habit_id: id1, fecha: '2026-04-14', value: 1 },
+    { habit_id: id2, fecha: '2026-04-14', value: 0 },
+    { habit_id: id1, fecha: '2026-04-15', value: 1 },
+    { habit_id: id2, fecha: '2026-04-15', value: 1 },
+    { habit_id: id1, fecha: '2026-04-16', value: 0 },
+    { habit_id: id2, fecha: '2026-04-16', value: 1 },
+    { habit_id: id1, fecha: '2026-04-17', value: 1 },
+    { habit_id: id2, fecha: '2026-04-17', value: 1 },
+    { habit_id: id1, fecha: '2026-04-18', value: 1 },
+    { habit_id: id2, fecha: '2026-04-18', value: 1 },
+    { habit_id: id1, fecha: today,        value: 1 },
+    { habit_id: id2, fecha: today,        value: 0 },
   ];
 }
 
 // ══════════════════════════════════════════════════════
-//  SYNC — GET from n8n
-//
-//  n8n returns: { habits: [{key, name, emoji}], rows: [{fecha, week, "🐐": 0|1, ...}] }
-//  Fallback:    flat array of sheet rows (for direct Google Sheets calls)
+//  SYNC — load habits + logs from Supabase
 // ══════════════════════════════════════════════════════
 async function syncData() {
   try {
-    const res = await fetch(N8N_GET);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
-
-    if (json.habits && json.rows) {
-      // ✅ Normal path: n8n processed response
-      // habits[i].key = exact sheet column name (e.g. "🐐" or "20 push ups")
-      // rows[i]  = { fecha, week, "🐐": 1, "20 push ups": 0, ... }
-      habits  = json.habits;
-      allData = json.rows;
-    } else {
-      // Fallback: flat row array — detect habits from columns
-      const rows = Array.isArray(json) ? json : [json];
-      const ok   = parseSheetResponse(rows);
-      if (!ok) throw new Error('No habit columns found in response');
-    }
-
+    const [habitsRes, logsRes] = await Promise.all([
+      sb('habits?select=*&order=created_at'),
+      sb('logs?select=*&order=fecha'),
+    ]);
+    habits  = habitsRes;
+    allData = logsRes;
   } catch (e) {
-    console.warn('syncData — usando datos locales:', e.message);
+    console.warn('Supabase no disponible, usando demo:', e.message);
     loadFallback();
+    showToast('Modo demo — configura Supabase');
   }
   renderHome();
 }
 
 // ══════════════════════════════════════════════════════
-//  STATS — computed per habit key
+//  STATS — computed from logs for a given habit UUID
 // ══════════════════════════════════════════════════════
-function stats(key) {
-  const sorted = [...allData].sort((a, b) => a.fecha.localeCompare(b.fecha));
+function stats(habitId) {
+  const logs   = allData.filter(l => l.habit_id === habitId);
+  const sorted = [...logs].sort((a, b) => a.fecha.localeCompare(b.fecha));
   const total  = sorted.length;
-  const done   = sorted.filter(r => r[key] === 1).length;
+  const done   = sorted.filter(l => l.value === 1).length;
   const pct    = total > 0 ? Math.round((done / total) * 100) : 0;
 
-  // Current streak backwards from today
+  // Current streak from today backwards
   const byDate = {};
-  sorted.forEach(r => byDate[r.fecha] = r[key]);
+  sorted.forEach(l => byDate[l.fecha] = l.value);
   let cur = 0;
   let d   = new Date(todayStr());
   while (true) {
@@ -170,16 +141,17 @@ function stats(key) {
 
   // Best streak
   let best = 0, c = 0;
-  sorted.forEach(r => {
-    if (r[key] === 1) { c++; if (c > best) best = c; }
+  sorted.forEach(l => {
+    if (l.value === 1) { c++; if (c > best) best = c; }
     else c = 0;
   });
 
   return { pct, cur, best };
 }
 
-function getRow(f) {
-  return allData.find(r => r.fecha === f);
+function getLogValue(habitId, fecha) {
+  const log = allData.find(l => l.habit_id === habitId && l.fecha === fecha);
+  return log ? log.value : undefined;
 }
 
 // ══════════════════════════════════════════════════════
@@ -190,12 +162,10 @@ function renderHome() {
 
   const today    = todayStr();
   const td       = parseDate(today);
-  const todayRow = getRow(today);
-
   document.getElementById('todayLabel').textContent =
     td.toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'short' });
 
-  const doneCount = habits.filter(h => todayRow && todayRow[h.key] === 1).length;
+  const doneCount = habits.filter(h => getLogValue(h.id, today) === 1).length;
   document.getElementById('todayScore').textContent = `${doneCount}/${habits.length}`;
 
   const list = document.getElementById('habitsList');
@@ -212,8 +182,8 @@ function renderHome() {
   }
 
   habits.forEach(h => {
-    const s          = stats(h.key);
-    const tv         = todayRow ? todayRow[h.key] : undefined;
+    const s          = stats(h.id);
+    const tv         = getLogValue(h.id, today);
     const statusClass= tv === 1 ? 'status-done' : tv === 0 ? 'status-miss' : '';
 
     const card = document.createElement('div');
@@ -235,7 +205,7 @@ function renderHome() {
           <div class="card-streak-lbl">Racha</div>
         </div>
       </div>`;
-    card.addEventListener('click', () => openDetail(h.key));
+    card.addEventListener('click', () => openDetail(h.id));
     list.appendChild(card);
   });
 }
@@ -243,11 +213,11 @@ function renderHome() {
 // ══════════════════════════════════════════════════════
 //  DETAIL
 // ══════════════════════════════════════════════════════
-function openDetail(key) {
-  currentKey = key;
+function openDetail(habitId) {
+  currentKey = habitId;
   selDate    = todayStr();
 
-  const h = habits.find(x => x.key === key);
+  const h = habits.find(x => x.id === habitId);
   document.getElementById('detailEmoji').textContent = h.emoji;
   document.getElementById('detailTitle').textContent = h.name;
   document.getElementById('home').classList.remove('active');
@@ -290,40 +260,39 @@ function shiftDay(d) {
 }
 
 function renderActionBtn() {
-  const row  = getRow(selDate);
-  const done = row && row[currentKey] === 1;
+  const done = getLogValue(currentKey, selDate) === 1;
   const btn  = document.getElementById('btnDone');
   const lbl  = document.getElementById('btnDoneLabel');
   btn.classList.toggle('active-state', done);
   lbl.textContent = done ? 'Completado' : 'Marcar hecho';
 }
 
-function markDay(val) {
-  let row = getRow(selDate);
-  if (row) {
-    row[currentKey] = val;
+// ══════════════════════════════════════════════════════
+//  MARK DAY — upsert log in Supabase
+//  Uses ON CONFLICT (habit_id, fecha) DO UPDATE
+// ══════════════════════════════════════════════════════
+async function markDay(val) {
+  // Optimistic update
+  const existing = allData.find(l => l.habit_id === currentKey && l.fecha === selDate);
+  if (existing) {
+    existing.value = val;
   } else {
-    const d  = parseDate(selDate);
-    const nr = { fecha: selDate, week: wkNum(d) };
-    habits.forEach(h => nr[h.key] = 0);
-    nr[currentKey] = val;
-    allData.push(nr);
+    allData.push({ habit_id: currentKey, fecha: selDate, value: val });
   }
-  pushMark(selDate, currentKey, val);
   renderDetail();
   renderHome();
   showToast(val === 1 ? '¡Hábito marcado! ✓' : 'Desmarcado');
-}
 
-async function pushMark(fecha, key, val) {
+  // Persist to Supabase
   try {
-    await fetch(N8N_POST, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ fecha, habit: key, value: val }),
+    await sb('logs', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=representation',
+      body:   { habit_id: currentKey, fecha: selDate, value: val },
     });
   } catch (e) {
-    // silent — local state already updated
+    showToast('Error guardando, recarga la app');
+    console.error(e);
   }
 }
 
@@ -337,11 +306,10 @@ function renderCal() {
   const m     = sel.getMonth();
   const first = new Date(y, m, 1);
   const last  = new Date(y, m + 1, 0);
-  const sdow  = (first.getDay() + 6) % 7; // Monday-first
+  const sdow  = (first.getDay() + 6) % 7;
 
   const ne = document.getElementById('calDayNames');
   const ce = document.getElementById('calCells');
-
   ne.innerHTML = ['L','M','X','J','V','S','D']
     .map(n => `<div class="cal-day-name">${n}</div>`).join('');
   ce.innerHTML = '';
@@ -352,14 +320,11 @@ function renderCal() {
     ce.appendChild(e);
   }
 
-  const bd = {};
-  allData.forEach(r => bd[r.fecha] = r[currentKey]);
-
   for (let day = 1; day <= last.getDate(); day++) {
     const ds      = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const isFut   = ds > today;
     const isToday = ds === today;
-    const val     = bd[ds];
+    const val     = getLogValue(currentKey, ds);
 
     let cls = 'cal-cell';
     if (isFut)                  cls += ' future';
@@ -387,12 +352,14 @@ function renderCal() {
 //  CHART
 // ══════════════════════════════════════════════════════
 function renderChart() {
-  const wm = {};
-  allData.forEach(r => {
-    const w = 'Sem ' + r.week;
+  const logs   = allData.filter(l => l.habit_id === currentKey);
+  const wm     = {};
+  logs.forEach(l => {
+    const d = parseDate(l.fecha);
+    const w = 'Sem ' + wkNum(d);
     if (!wm[w]) wm[w] = { done: 0, total: 0 };
     wm[w].total++;
-    if (r[currentKey] === 1) wm[w].done++;
+    if (l.value === 1) wm[w].done++;
   });
 
   const labels = Object.keys(wm).sort((a, b) =>
@@ -412,15 +379,11 @@ function renderChart() {
       labels,
       datasets: [{
         data,
-        backgroundColor: data.map(v =>
-          v >= 70 ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.1)'
-        ),
-        borderColor: data.map(v =>
-          v >= 70 ? '#22c55e' : '#ef4444'
-        ),
-        borderWidth:   1.5,
-        borderRadius:  8,
-        borderSkipped: false,
+        backgroundColor: data.map(v => v >= 70 ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.1)'),
+        borderColor:     data.map(v => v >= 70 ? '#22c55e'               : '#ef4444'),
+        borderWidth:     1.5,
+        borderRadius:    8,
+        borderSkipped:   false,
       }],
     },
     options: {
@@ -429,7 +392,7 @@ function renderChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          callbacks: { label: c => `${c.parsed.y}% completado` },
+          callbacks:       { label: c => `${c.parsed.y}% completado` },
           backgroundColor: '#141412',
           titleColor:      '#f5f4f0',
           bodyColor:       '#a8a89a',
@@ -440,13 +403,8 @@ function renderChart() {
       scales: {
         y: {
           min: 0, max: 100,
-          ticks: {
-            callback: v => v + '%',
-            font:     { size: 11, family: 'Inter' },
-            color:    '#a8a89a',
-            stepSize: 25,
-          },
-          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: { callback: v => v + '%', font: { size: 11, family: 'Inter' }, color: '#a8a89a', stepSize: 25 },
+          grid:  { color: 'rgba(0,0,0,0.05)' },
         },
         x: {
           ticks: { font: { size: 11, family: 'Inter' }, color: '#a8a89a' },
@@ -504,23 +462,18 @@ async function submitNewHabit() {
   btn.disabled    = true;
   btn.textContent = 'Creando…';
 
-  // The key equals the display name (matching how the sheet column will be named)
-  const key = name;
-  habits.push({ key, name, emoji });
-  allData.forEach(r => { if (r[key] === undefined) r[key] = 0; });
-
-  closeAddModal();
-  renderHome();
-  showToast(`"${name}" creado ✓`);
-
   try {
-    await fetch(N8N_CREATE, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ name, emoji, key }),
+    const result = await sb('habits', {
+      method: 'POST',
+      body:   { name, emoji },
     });
+    habits.push(result[0]);
+    closeAddModal();
+    renderHome();
+    showToast(`"${name}" creado ✓`);
   } catch (e) {
-    showToast('Guardado local. Sincronizará al recargar.');
+    showToast('Error al crear hábito');
+    console.error(e);
   }
 
   btn.disabled    = false;
