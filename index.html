@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Habits">
+  <meta name="theme-color" content="#0f0f13">
+  <meta name="description" content="Rastrea tus hábitos diarios con estilo. Visualiza tu progreso, mantén rachas y construye rutinas duraderas.">
+  <title>Habits — Seguimiento de hábitos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- HOME SCREEN -->
+<div id="home" class="screen active">
+  <div class="home-header">
+    <div class="header-top">
+      <div>
+        <div class="greeting" id="greet">Buenos días</div>
+        <h1 class="main-title">Mis Hábitos</h1>
+      </div>
+      <button class="add-fab" onclick="openAddModal()" id="addFabBtn" aria-label="Añadir hábito">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+    <div class="today-strip">
+      <div class="today-left">
+        <div class="today-label">HOY</div>
+        <div class="today-date" id="todayLabel">—</div>
+      </div>
+      <div class="today-score-wrap">
+        <div class="today-score" id="todayScore">—</div>
+        <div class="today-score-lbl">hábitos</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="habits-grid" id="habitsList">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Cargando hábitos…</span>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL SCREEN -->
+<div id="detail" class="screen">
+  <div class="detail-header">
+    <button class="back-btn" onclick="goHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15,18 9,12 15,6"/></svg>
+      Hábitos
+    </button>
+    <div class="detail-hero">
+      <div class="detail-emoji" id="detailEmoji">—</div>
+      <div class="detail-title" id="detailTitle">—</div>
+    </div>
+    <div class="detail-stats">
+      <div class="stat-card">
+        <div class="stat-val" id="dPct">—</div>
+        <div class="stat-lbl">Cumplimiento</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="dCurrent">—</div>
+        <div class="stat-lbl">Racha actual</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="dBest">—</div>
+        <div class="stat-lbl">Mejor racha</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-scroll">
+    <div class="date-nav">
+      <button class="dnav-btn" id="prevDay" onclick="shiftDay(-1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15,18 9,12 15,6"/></svg>
+      </button>
+      <span class="curr-date" id="dateNavLabel">—</span>
+      <button class="dnav-btn" id="nextDay" onclick="shiftDay(1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9,18 15,12 9,6"/></svg>
+      </button>
+    </div>
+
+    <div class="action-area">
+      <button class="action-btn btn-done" id="btnDone" onclick="markDay(1)">
+        <span class="action-icon">✓</span>
+        <span id="btnDoneLabel">Marcar hecho</span>
+      </button>
+      <button class="action-btn btn-undone" onclick="markDay(0)">
+        <span class="action-icon">✕</span>
+        Desmarcar
+      </button>
+    </div>
+
+    <div class="section-block">
+      <div class="section-title">Calendario del mes</div>
+      <div class="chart-wrap">
+        <div class="cal-grid" id="calDayNames"></div>
+        <div style="height:6px;"></div>
+        <div class="cal-grid" id="calCells"></div>
+      </div>
+    </div>
+
+    <div class="section-block pb-safe">
+      <div class="section-title">Progreso semanal</div>
+      <div class="chart-wrap"><canvas id="weekChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NUEVO HÁBITO -->
+<div class="overlay" id="addModal" onclick="bgClick(event,'addModal',closeAddModal)">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="modal-title">✨ Nuevo hábito</div>
+    <label class="field-label">Nombre del hábito</label>
+    <input class="field-input" id="habitName" type="text" placeholder="ej. Leer 20 min" maxlength="40">
+    <label class="field-label">Ícono</label>
+    <div class="emoji-grid" id="emojiGrid"></div>
+    <div class="custom-em">
+      <input class="field-input custom-em-input" id="customEmoji" type="text" placeholder="O escribe tu emoji…" maxlength="4">
+    </div>
+    <button class="submit-btn" id="submitHabit" onclick="submitNewHabit()">Crear hábito →</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
