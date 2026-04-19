@@ -98,12 +98,22 @@ async function syncData() {
       sb('habits?select=*&order=created_at'),
       sb('logs?select=*&order=fecha'),
     ]);
-    habits  = h;
-    allData = l;
+    habits  = Array.isArray(h) ? h : [];
+    allData = Array.isArray(l) ? l : [];
+    console.log(`✓ Supabase OK — ${habits.length} hábitos, ${allData.length} logs`);
   } catch (e) {
-    console.warn('Supabase no disponible, modo demo:', e.message);
+    console.error('Supabase error:', e.message);
+    // Diagnose the type of error
+    if (e.message.includes('42P01') || e.message.includes('does not exist')) {
+      showToast('❌ Tablas no creadas — corre el SQL en Supabase');
+    } else if (e.message.includes('401') || e.message.includes('Invalid API key')) {
+      showToast('❌ API key inválido — revisa las credenciales');
+    } else if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+      showToast('❌ Sin conexión a internet');
+    } else {
+      showToast(`❌ Error: ${e.message.slice(0, 60)}`);
+    }
     loadFallback();
-    showToast('Modo demo — configura Supabase');
   }
   renderHome();
 }
