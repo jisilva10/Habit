@@ -285,16 +285,16 @@ async function markDay(val) {
   renderHome();
   showToast(val === 1 ? '¡Marcado! ✓' : 'Desmarcado');
 
-  // Persist
+  // Persist — on_conflict especifica la restricción unique (habit_id, fecha)
   try {
-    await sb('logs', {
+    await sb('logs?on_conflict=habit_id,fecha', {
       method: 'POST',
       prefer: 'resolution=merge-duplicates,return=representation',
       body:   { habit_id: currentKey, fecha: selDate, value: val },
     });
   } catch (e) {
-    showToast('Error al guardar — sin conexión');
-    console.error(e);
+    showToast(`❌ ${e.message.slice(0, 60)}`);
+    console.error('markDay error:', e);
   }
 }
 
