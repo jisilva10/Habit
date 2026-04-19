@@ -339,22 +339,45 @@ function renderCal() {
 }
 
 // ══════════════════════════════════════════════════════
-//  CHART — minimal style
+//  CHART — días completados por semana (max 7)
 // ══════════════════════════════════════════════════════
 function renderChart() {
   const logs = allData.filter(l => l.habit_id === currentKey);
-  const wm   = {};
+
+  // Agrupa por semana usando año+semana como clave única
+  const wm = {};
   logs.forEach(l => {
-    const w = 'S' + wkNum(parseDate(l.fecha));
-    if (!wm[w]) wm[w] = { done: 0, total: 0 };
-    wm[w].total++;
-    if (l.value === 1) wm[w].done++;
+    const d   = parseDate(l.fecha);
+    const wk  = wkNum(d);
+    const yr  = d.getFullYear();
+    const key = `${yr}-${String(wk).padStart(2,'0')}`;
+    if (!wm[key]) wm[key] = { label: `S${wk}`, done: 0, year: yr, week: wk };
+    if (l.value === 1) wm[key].done++;
   });
 
-  const labels = Object.keys(wm).sort((a, b) =>
-    parseInt(a.slice(1)) - parseInt(b.slice(1))
-  );
-  const data = labels.map(l => Math.round((wm[l].done / wm[l].total) * 100));
+  const sorted     = Object.entries(wm).sort(([a],[b]) => a.localeCompare(b));
+  const nowWeek    = wkNum(new Date());
+  const nowYear    = new Date().getFullYear();
+
+  const labels     = sorted.map(([, v]) => v.label);
+  const counts     = sorted.map(([, v]) => v.done);          // 0–7
+  const isCurrent  = sorted.map(([, v]) => v.week === nowWeek && v.year === nowYear);
+
+  // Color scale: ≥6 verde fuerte, ≥4 verde suave, ≥2 ámbar, <2 rojo
+  function fillColor(n, current) {
+    const a = current ? 0.09 : 0.13;   // semana en curso más tenue
+    if (n >= 6) return `rgba(21,128,61,${a})`;
+    if (n >= 4) return `rgba(34,197,94,${a})`;
+    if (n >= 2) return `rgba(202,138,4,${a})`;
+    return `rgba(192,27,27,${a})`;
+  }
+  function strokeColor(n, current) {
+    const a = current ? 0.45 : 0.75;
+    if (n >= 6) return `rgba(21,128,61,${a})`;
+    if (n >= 4) return `rgba(34,197,94,${a})`;
+    if (n >= 2) return `rgba(202,138,4,${a})`;
+    return `rgba(192,27,27,${a})`;
+  }
 
   const ctx = document.getElementById('weekChart').getContext('2d');
   if (wChart) wChart.destroy();
@@ -364,12 +387,12 @@ function renderChart() {
     data: {
       labels,
       datasets: [{
-        data,
-        backgroundColor: data.map(v => v >= 70 ? 'rgba(21,128,61,0.1)' : 'rgba(192,27,27,0.08)'),
-        borderColor:     data.map(v => v >= 70 ? '#22C55E'              : '#EF4444'),
-        borderWidth: 1.5,
-        borderRadius: 5,
-        borderSkipped: false,
+        data:            counts,
+        backgroundColor: counts.map((c,i) => fillColor(c, isCurrent[i])),
+        borderColor:     counts.map((c,i) => strokeColor(c, isCurrent[i])),
+        borderWidth:     1.5,
+        borderRadius:    6,
+        borderSkipped:   false,
       }],
     },
     options: {
@@ -378,32 +401,38 @@ function renderChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          callbacks: { label: c => ` ${c.parsed.y}%` },
-          backgroundColor:    '#1A1714',
-          titleColor:         '#F5F3F0',
-          bodyColor:          '#ABA79F',
-          padding:            10,
-          cornerRadius:       8,
-          displayColors:      false,
-          titleFont:          { family: 'DM Sans', weight: '600', size: 12 },
-          bodyFont:           { family: 'DM Mono',  size: 13 },
+          callbacks: {
+            title: (items) => {
+              const i = items[0].dataIndex;
+              return isCurrent[i] ? `${labels[i]}  (en curso)` : labels[i];
+            },
+            label: c => `  ${c.parsed.y} / 7 días ✓`,
+          },
+          backgroundColor: '#1A1714',
+          titleColor:      '#F5F3F0',
+          bodyColor:       '#ABA79F',
+          padding:         10,
+          cornerRadius:    8,
+          displayColors:   false,
+          titleFont: { family: 'DM Sans', weight: '600', size: 12 },
+          bodyFont:  { family: 'DM Mono', size: 13 },
         },
       },
       scales: {
         y: {
-          min: 0, max: 100,
+          min: 0,
+          max: 7,
           ticks: {
-            callback: v => v + '%',
-            font:     { size: 10, family: 'DM Mono' },
-            color:    '#ABA79F',
-            stepSize: 50,
-            maxTicksLimit: 3,
+            stepSize: 1,
+            font:  { size: 10, family: 'DM Mono' },
+            color: '#ABA79F',
+            callback: v => v === 7 ? '7 ✓' : v === 0 ? '' : String(v),
           },
-          grid:   { color: 'rgba(26,23,20,0.05)' },
+          grid:   { color: 'rgba(26,23,20,0.04)', drawTicks: false },
           border: { display: false },
         },
         x: {
-          ticks: { font: { size: 10, family: 'DM Mono' }, color: '#ABA79F' },
+          ticks: { font: { size: 10, family: 'DM Mono' }, color: '#ABA79F', maxRotation: 0 },
           grid:   { display: false },
           border: { display: false },
         },
