@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#1A1714"/>
+  <!-- Row 1: checked habit -->
+  <circle cx="155" cy="185" r="38" fill="#F5F3F0"/>
+  <polyline points="141,185 152,197 172,170" fill="none" stroke="#1A1714" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="215" y="170" width="162" height="30" rx="15" fill="#F5F3F0"/>
+  <!-- Row 2: checked habit -->
+  <circle cx="155" cy="270" r="38" fill="#F5F3F0"/>
+  <polyline points="141,270 152,282 172,255" fill="none" stroke="#1A1714" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="215" y="255" width="130" height="30" rx="15" fill="#F5F3F0"/>
+  <!-- Row 3: pending habit (faded) -->
+  <circle cx="155" cy="355" r="38" fill="none" stroke="#F5F3F0" stroke-width="5" opacity="0.35"/>
+  <rect x="215" y="340" width="148" height="30" rx="15" fill="#F5F3F0" opacity="0.35"/>
+</svg>
