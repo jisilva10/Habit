@@ -1,17 +1,20 @@
 // ══════════════════════════════════════════════════════
-//  Habits App — Production config
+//  Habits App — Production
 // ══════════════════════════════════════════════════════
 
-const N8N_GET    = 'https://1.jisn8n.work/webhook/habits';      // GET  — fetch all data
+const N8N_GET    = 'https://1.jisn8n.work/webhook/habits';      // GET  — fetch all rows
 const N8N_POST   = 'https://1.jisn8n.work/webhook/habits';      // POST — mark/unmark a day
 const N8N_CREATE = 'https://1.jisn8n.work/webhook/habits-new';  // POST — create new habit
 
-// ── Preset emojis ──
+// Sheet columns that are NOT habits
+const SKIP_COLS = new Set(['fecha', 'Fecha', 'FECHA', 'week', 'Week', 'WEEK']);
+
+// Preset emoji palette for new habits
 const EMOJIS = ['🐐','💪','💧','📚','🏃','🧘','🥗','😴','🎯','🧠','🚴','✍️'];
 
 // ── App state ──
-let allData    = [];
-let habits     = [];
+let allData    = [];   // array of row objects: { fecha, week, [habitKey]: 0|1, ... }
+let habits     = [];   // array of { key, name, emoji }
 let currentKey = null;
 let selDate    = todayStr();
 let selEmoji   = EMOJIS[0];
@@ -23,25 +26,21 @@ let wChart     = null;
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
-
 function parseDate(s) {
   return new Date(s + 'T00:00:00');
 }
-
 function wkNum(date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
-
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2400);
 }
-
 function greeting() {
   const h = new Date().getHours();
   if (h < 12) return 'Buenos días ☀️';
@@ -49,28 +48,76 @@ function greeting() {
   return 'Buenas noches 🌙';
 }
 
+// Extract the first emoji character from a string, if any
+function extractEmoji(str) {
+  const m = str.match(/\p{Emoji_Presentation}|\p{Extended_Pictographic}/u);
+  return m ? m[0] : null;
+}
+
+// ══════════════════════════════════════════════════════
+//  DATA PARSING
+//  Reads the sheet response and auto-discovers habits
+//  from any column that isn't Fecha/Week.
+//
+//  Sheet format expected from n8n:
+//  [ { "Fecha": "2026-04-13", "Week": 16, "🐐": 1, "20 push ups": 0 }, ... ]
+// ══════════════════════════════════════════════════════
+function parseSheetResponse(rows) {
+  if (!Array.isArray(rows) || !rows.length) return false;
+
+  const firstRow = rows[0];
+
+  // Discover habit columns = all keys that are not fecha/week
+  const habitCols = Object.keys(firstRow).filter(k => !SKIP_COLS.has(k));
+  if (!habitCols.length) return false;
+
+  // Build habits array from column headers
+  habits = habitCols.map(col => {
+    const emoji = extractEmoji(col);
+    // If the col IS just an emoji, use it as the display name too
+    const name  = col.trim();
+    return { key: col, name, emoji: emoji || '📌' };
+  });
+
+  // Normalise rows — keep original column keys as habit keys
+  allData = rows.map(r => {
+    const row = {
+      fecha: r['Fecha'] || r['fecha'] || r['FECHA'] || '',
+      week:  parseInt(r['Week'] || r['week'] || r['WEEK'] || 0),
+    };
+    habitCols.forEach(col => {
+      // Value can come as number or string "1"/"0"
+      row[col] = parseInt(r[col] ?? 0);
+    });
+    return row;
+  }).filter(r => r.fecha);
+
+  return true;
+}
+
 // ══════════════════════════════════════════════════════
 //  FALLBACK DATA (offline / demo)
+//  Uses the same column structure as the real sheet
 // ══════════════════════════════════════════════════════
 function loadFallback() {
   habits = [
-    { key: 'goat',    name: '🐐 Goat Mode', emoji: '🐐' },
-    { key: 'pushups', name: '20 Push Ups',  emoji: '💪' },
+    { key: '🐐',         name: '🐐',          emoji: '🐐' },
+    { key: '20 push ups',name: '20 push ups',  emoji: '💪' },
   ];
   const today = todayStr();
   allData = [
-    { fecha: '2026-04-13', week: 16, goat: 1, pushups: 1 },
-    { fecha: '2026-04-14', week: 16, goat: 1, pushups: 0 },
-    { fecha: '2026-04-15', week: 16, goat: 1, pushups: 1 },
-    { fecha: '2026-04-16', week: 16, goat: 0, pushups: 1 },
-    { fecha: '2026-04-17', week: 16, goat: 1, pushups: 1 },
-    { fecha: '2026-04-18', week: 16, goat: 1, pushups: 1 },
-    { fecha: today,        week: 17, goat: 1, pushups: 0 },
+    { fecha: '2026-04-13', week: 16, '🐐': 1, '20 push ups': 1 },
+    { fecha: '2026-04-14', week: 16, '🐐': 1, '20 push ups': 0 },
+    { fecha: '2026-04-15', week: 16, '🐐': 1, '20 push ups': 1 },
+    { fecha: '2026-04-16', week: 16, '🐐': 0, '20 push ups': 1 },
+    { fecha: '2026-04-17', week: 16, '🐐': 1, '20 push ups': 1 },
+    { fecha: '2026-04-18', week: 16, '🐐': 1, '20 push ups': 1 },
+    { fecha: today,        week: 17, '🐐': 1, '20 push ups': 0 },
   ];
 }
 
 // ══════════════════════════════════════════════════════
-//  DATA SYNC
+//  SYNC — GET from n8n/sheet
 // ══════════════════════════════════════════════════════
 async function syncData() {
   try {
@@ -78,28 +125,19 @@ async function syncData() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
 
-    if (json.habits && json.rows) {
-      habits  = json.habits;
-      allData = json.rows;
-    } else {
-      // Normalise flat row format
-      const rows = Array.isArray(json) ? json : [json];
-      allData = rows.map(r => ({
-        fecha:   r['Fecha']   || r['fecha'],
-        week:    parseInt(r['Week'] || r['week'] || 0),
-        goat:    parseInt(r['🐐']  ?? r['goat']    ?? 0),
-        pushups: parseInt(r['20 push ups'] ?? r['pushups'] ?? 0),
-      })).filter(r => r.fecha);
-      if (!habits.length) loadFallback();
-    }
+    const rows = Array.isArray(json) ? json : [json];
+    const ok   = parseSheetResponse(rows);
+    if (!ok) throw new Error('No habit columns found in response');
+
   } catch (e) {
+    console.warn('syncData fallback:', e.message);
     loadFallback();
   }
   renderHome();
 }
 
 // ══════════════════════════════════════════════════════
-//  STATS
+//  STATS — computed per habit key
 // ══════════════════════════════════════════════════════
 function stats(key) {
   const sorted = [...allData].sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -107,7 +145,7 @@ function stats(key) {
   const done   = sorted.filter(r => r[key] === 1).length;
   const pct    = total > 0 ? Math.round((done / total) * 100) : 0;
 
-  // Current streak (backwards from today)
+  // Current streak backwards from today
   const byDate = {};
   sorted.forEach(r => byDate[r.fecha] = r[key]);
   let cur = 0;
@@ -162,16 +200,16 @@ function renderHome() {
   }
 
   habits.forEach(h => {
-    const s  = stats(h.key);
-    const tv = todayRow ? todayRow[h.key] : undefined;
-    const statusClass = tv === 1 ? 'status-done' : tv === 0 ? 'status-miss' : '';
+    const s          = stats(h.key);
+    const tv         = todayRow ? todayRow[h.key] : undefined;
+    const statusClass= tv === 1 ? 'status-done' : tv === 0 ? 'status-miss' : '';
 
     const card = document.createElement('div');
     card.className = `habit-card ${statusClass}`;
     card.innerHTML = `
       <div class="card-status-bar"></div>
       <div class="card-top">
-        <div class="card-emoji">${h.emoji || '📌'}</div>
+        <div class="card-emoji">${h.emoji}</div>
         <div class="card-dot"></div>
       </div>
       <div class="card-name">${h.name}</div>
@@ -198,8 +236,8 @@ function openDetail(key) {
   selDate    = todayStr();
 
   const h = habits.find(x => x.key === key);
-  document.getElementById('detailEmoji').textContent  = h.emoji || '📌';
-  document.getElementById('detailTitle').textContent  = h.name;
+  document.getElementById('detailEmoji').textContent = h.emoji;
+  document.getElementById('detailTitle').textContent = h.name;
   document.getElementById('home').classList.remove('active');
   document.getElementById('detail').classList.add('active');
   renderDetail();
@@ -287,7 +325,7 @@ function renderCal() {
   const m     = sel.getMonth();
   const first = new Date(y, m, 1);
   const last  = new Date(y, m + 1, 0);
-  const sdow  = (first.getDay() + 6) % 7;   // Monday-first offset
+  const sdow  = (first.getDay() + 6) % 7; // Monday-first
 
   const ne = document.getElementById('calDayNames');
   const ce = document.getElementById('calCells');
@@ -296,7 +334,6 @@ function renderCal() {
     .map(n => `<div class="cal-day-name">${n}</div>`).join('');
   ce.innerHTML = '';
 
-  // Empty leading cells
   for (let i = 0; i < sdow; i++) {
     const e = document.createElement('div');
     e.className = 'cal-cell empty';
@@ -307,22 +344,20 @@ function renderCal() {
   allData.forEach(r => bd[r.fecha] = r[currentKey]);
 
   for (let day = 1; day <= last.getDate(); day++) {
-    const ds     = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    const isFut  = ds > today;
-    const isToday= ds === today;
-    const val    = bd[ds];
+    const ds      = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const isFut   = ds > today;
+    const isToday = ds === today;
+    const val     = bd[ds];
 
     let cls = 'cal-cell';
-    if (isFut)              cls += ' future';
-    else if (val === 1)     cls += ' done-day';
+    if (isFut)                  cls += ' future';
+    else if (val === 1)         cls += ' done-day';
     else if (val !== undefined) cls += ' miss-day';
-    if (isToday)            cls += ' today-cell';
-    if (ds === selDate)     cls += ' selected-day';
+    if (isToday)                cls += ' today-cell';
 
     const c = document.createElement('div');
     c.className = cls;
     c.innerHTML = `<div class="day-num">${day}</div>${!isFut ? '<div class="day-dot"></div>' : ''}`;
-
     if (!isFut) {
       c.addEventListener('click', () => {
         selDate = ds;
@@ -365,11 +400,15 @@ function renderChart() {
       labels,
       datasets: [{
         data,
-        backgroundColor: data.map(v => v >= 70 ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.12)'),
-        borderColor:     data.map(v => v >= 70 ? '#4ade80'               : '#f87171'),
-        borderWidth:     1.5,
-        borderRadius:    8,
-        borderSkipped:   false,
+        backgroundColor: data.map(v =>
+          v >= 70 ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.1)'
+        ),
+        borderColor: data.map(v =>
+          v >= 70 ? '#22c55e' : '#ef4444'
+        ),
+        borderWidth:   1.5,
+        borderRadius:  8,
+        borderSkipped: false,
       }],
     },
     options: {
@@ -377,22 +416,29 @@ function renderChart() {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: c => `${c.parsed.y}% completado` } },
+        tooltip: {
+          callbacks: { label: c => `${c.parsed.y}% completado` },
+          backgroundColor: '#141412',
+          titleColor:      '#f5f4f0',
+          bodyColor:       '#a8a89a',
+          padding:         10,
+          cornerRadius:    10,
+        },
       },
       scales: {
         y: {
           min: 0, max: 100,
           ticks: {
             callback: v => v + '%',
-            font: { size: 11, family: 'Inter' },
-            color: '#5a5a70',
+            font:     { size: 11, family: 'Inter' },
+            color:    '#a8a89a',
             stepSize: 25,
           },
-          grid: { color: 'rgba(255,255,255,0.05)' },
+          grid: { color: 'rgba(0,0,0,0.05)' },
         },
         x: {
-          ticks: { font: { size: 11, family: 'Inter' }, color: '#5a5a70' },
-          grid: { display: false },
+          ticks: { font: { size: 11, family: 'Inter' }, color: '#a8a89a' },
+          grid:  { display: false },
         },
       },
     },
@@ -403,7 +449,7 @@ function renderChart() {
 //  ADD HABIT MODAL
 // ══════════════════════════════════════════════════════
 function openAddModal() {
-  document.getElementById('habitName').value  = '';
+  document.getElementById('habitName').value   = '';
   document.getElementById('customEmoji').value = '';
   selEmoji = EMOJIS[0];
 
@@ -411,7 +457,7 @@ function openAddModal() {
   grid.innerHTML = '';
   EMOJIS.forEach(em => {
     const b = document.createElement('button');
-    b.className = 'em-opt' + (em === selEmoji ? ' sel' : '');
+    b.className   = 'em-opt' + (em === selEmoji ? ' sel' : '');
     b.textContent = em;
     b.onclick = () => {
       selEmoji = em;
@@ -446,11 +492,8 @@ async function submitNewHabit() {
   btn.disabled    = true;
   btn.textContent = 'Creando…';
 
-  const key = name.toLowerCase()
-    .replace(/[^a-z0-9]/g, '_')
-    .replace(/_+/g, '_')
-    .slice(0, 30);
-
+  // The key equals the display name (matching how the sheet column will be named)
+  const key = name;
   habits.push({ key, name, emoji });
   allData.forEach(r => { if (r[key] === undefined) r[key] = 0; });
 
