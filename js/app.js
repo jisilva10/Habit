@@ -97,12 +97,12 @@ function parseSheetResponse(rows) {
 
 // ══════════════════════════════════════════════════════
 //  FALLBACK DATA (offline / demo)
-//  Uses the same column structure as the real sheet
+//  Column keys = exact sheet column names
 // ══════════════════════════════════════════════════════
 function loadFallback() {
   habits = [
-    { key: '🐐',         name: '🐐',          emoji: '🐐' },
-    { key: '20 push ups',name: '20 push ups',  emoji: '💪' },
+    { key: '🐐',          name: '🐐',          emoji: '🐐' },
+    { key: '20 push ups', name: '20 push ups',  emoji: '💪' },
   ];
   const today = todayStr();
   allData = [
@@ -117,7 +117,10 @@ function loadFallback() {
 }
 
 // ══════════════════════════════════════════════════════
-//  SYNC — GET from n8n/sheet
+//  SYNC — GET from n8n
+//
+//  n8n returns: { habits: [{key, name, emoji}], rows: [{fecha, week, "🐐": 0|1, ...}] }
+//  Fallback:    flat array of sheet rows (for direct Google Sheets calls)
 // ══════════════════════════════════════════════════════
 async function syncData() {
   try {
@@ -125,12 +128,21 @@ async function syncData() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
 
-    const rows = Array.isArray(json) ? json : [json];
-    const ok   = parseSheetResponse(rows);
-    if (!ok) throw new Error('No habit columns found in response');
+    if (json.habits && json.rows) {
+      // ✅ Normal path: n8n processed response
+      // habits[i].key = exact sheet column name (e.g. "🐐" or "20 push ups")
+      // rows[i]  = { fecha, week, "🐐": 1, "20 push ups": 0, ... }
+      habits  = json.habits;
+      allData = json.rows;
+    } else {
+      // Fallback: flat row array — detect habits from columns
+      const rows = Array.isArray(json) ? json : [json];
+      const ok   = parseSheetResponse(rows);
+      if (!ok) throw new Error('No habit columns found in response');
+    }
 
   } catch (e) {
-    console.warn('syncData fallback:', e.message);
+    console.warn('syncData — usando datos locales:', e.message);
     loadFallback();
   }
   renderHome();
