@@ -1,5 +1,12 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+  "framework": null,
+  "outputDirectory": ".",
+  "routes": [
+    { "src": "/sw.js",             "dest": "/sw.js",           "headers": { "Cache-Control": "no-cache, no-store" } },
+    { "src": "/manifest.json",     "dest": "/manifest.json" },
+    { "src": "/public/(.*)",       "dest": "/public/$1" },
+    { "src": "/css/(.*)",          "dest": "/css/$1" },
+    { "src": "/js/(.*)",           "dest": "/js/$1" },
+    { "src": "/(.*)",              "dest": "/index.html" }
   ]
 }
