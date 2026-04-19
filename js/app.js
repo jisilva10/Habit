@@ -3,8 +3,8 @@
 //  ⚙️  Configura tus credenciales aquí:
 // ══════════════════════════════════════════════════════
 
-const SUPABASE_URL      = 'https://TU_PROYECTO.supabase.co';   // ← tu URL
-const SUPABASE_ANON_KEY = 'TU_ANON_KEY';                       // ← tu anon key
+const SUPABASE_URL      = 'https://jbjynxhcsmgftvjdrlxr.supabase.co';   // ← tu URL
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpianlueGhjc21nZnR2amRybHhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2MzQxNjksImV4cCI6MjA5MjIxMDE2OX0.W6WLVzNuPqVmLElaSJPEuqPMM4X2rMKiahKOjuDET6M';                       // ← tu anon key
 
 // Preset emojis
 const EMOJIS = ['🐐','💪','💧','📚','🏃','🧘','🥗','😴','🎯','🧠','🚴','✍️'];
