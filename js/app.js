@@ -410,8 +410,8 @@ function renderCal() {
     if (isFut)                  cls += ' future';
     else if (val === 1)         cls += ' done-day';
     else if (val !== undefined) cls += ' miss-day';
-    if (isToday)                cls += ' today-cell';
-    if (isSel && !isToday)      cls += ' sel-day';
+    if (isToday)  cls += ' today-cell';
+    if (isSel)    cls += ' sel-day';
 
     const c = document.createElement('div');
     c.className = cls;

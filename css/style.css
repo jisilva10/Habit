@@ -754,18 +754,26 @@ body {
 .cal-cell.miss-day { background: var(--stop-bg); border-color: var(--stop-bd); }
 .cal-cell.miss-day .day-num { color: var(--stop); }
 .cal-cell.miss-day .day-dot { background: var(--stop-dot); }
+/* Hoy — solo outline fino */
 .cal-cell.today-cell {
   border-color: var(--ink) !important;
-  box-shadow: 0 0 0 1.5px var(--ink);
+  box-shadow: none;
 }
 .cal-cell.today-cell .day-num { color: var(--ink); font-weight: 800; }
 
-/* Día seleccionado (selDate ≠ today) — contorno negro */
+/* Día seleccionado — fondo negro sólido, texto blanco */
 .cal-cell.sel-day {
+  background: var(--ink) !important;
   border-color: var(--ink) !important;
-  box-shadow: 0 0 0 1.5px var(--ink);
+  box-shadow: none;
 }
-.cal-cell.sel-day .day-num { color: var(--ink); font-weight: 700; }
+.cal-cell.sel-day .day-num  { color: #fff !important; font-weight: 800; }
+.cal-cell.sel-day .day-dot  { background: rgba(255,255,255,0.55); }
+
+/* Si hoy está seleccionado: filled negro también */
+.cal-cell.today-cell.sel-day {
+  background: var(--ink) !important;
+}
 
 /* Chart */
 .chart-header {
