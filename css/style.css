@@ -674,6 +674,46 @@ body {
 }
 
 /* Calendar */
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.cal-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-month-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--ink);
+  min-width: 110px;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.cal-mnav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-xs);
+  border: 1.5px solid var(--card-border);
+  background: var(--raised);
+  color: var(--ink-2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .13s, border-color .13s, transform .13s var(--spring);
+  flex-shrink: 0;
+}
+.cal-mnav-btn svg { width: 14px; height: 14px; }
+.cal-mnav-btn:hover { background: var(--raised-2); border-color: var(--card-border-hover); color: var(--ink); }
+.cal-mnav-btn:active { transform: scale(.88); }
+.cal-mnav-btn:disabled { opacity: .22; cursor: default; transform: none; }
+
 .cal-wrap {
   background: var(--surface);
   border: 1.5px solid var(--card-border);
@@ -721,6 +761,43 @@ body {
 .cal-cell.today-cell .day-num { color: var(--ink); font-weight: 800; }
 
 /* Chart */
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.chart-tabs {
+  display: flex;
+  gap: 3px;
+  background: var(--raised);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--r-sm);
+  padding: 3px;
+}
+
+.chart-tab {
+  font-family: var(--ff);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-radius: calc(var(--r-sm) - 3px);
+  padding: 5px 9px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  line-height: 1;
+}
+.chart-tab:hover { color: var(--ink); }
+.chart-tab.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 4px rgba(17,17,16,0.08);
+}
+
 .chart-wrap {
   background: var(--surface);
   border: 1.5px solid var(--card-border);

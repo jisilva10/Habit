@@ -15,6 +15,8 @@ let allData    = [];   // logs: [{id, habit_id, fecha, value}]
 let currentKey = null; // active habit UUID
 let editHabitId= null; // habit UUID being edited
 let selDate    = todayStr();
+let calViewDate= null; // {y, m} for calendar month navigation
+let chartMode  = 'days'; // 'days' | 'weeks' | 'months'
 let selEmoji   = EMOJIS[0];
 let editEmoji  = EMOJIS[0];
 let wChart     = null;
@@ -224,9 +226,12 @@ function renderHome() {
 //  DETAIL
 // ══════════════════════════════════════════════════════
 function openDetail(habitId) {
-  currentKey = habitId;
-  selDate    = todayStr();
-  const h    = habits.find(x => x.id === habitId);
+  currentKey  = habitId;
+  selDate     = todayStr();
+  const td    = parseDate(selDate);
+  calViewDate = { y: td.getFullYear(), m: td.getMonth() };
+  chartMode   = 'days';
+  const h = habits.find(x => x.id === habitId);
   document.getElementById('detailEmoji').textContent = h.emoji;
   document.getElementById('detailTitle').textContent = h.name;
   document.getElementById('home').classList.remove('active');
@@ -330,14 +335,30 @@ async function markDay(val) {
 }
 
 // ══════════════════════════════════════════════════════
-//  CALENDAR
+//  CALENDAR — with month navigation
 // ══════════════════════════════════════════════════════
+function shiftCalMonth(dir) {
+  calViewDate.m += dir;
+  if (calViewDate.m > 11) { calViewDate.m = 0;  calViewDate.y++; }
+  if (calViewDate.m < 0)  { calViewDate.m = 11; calViewDate.y--; }
+  renderCal();
+}
+
 function renderCal() {
   const today = todayStr();
-  const sel   = parseDate(selDate);
-  const y     = sel.getFullYear(), m = sel.getMonth();
-  const first = new Date(y, m, 1), last = new Date(y, m + 1, 0);
+  const { y, m } = calViewDate;
+  const first = new Date(y, m, 1);
+  const last  = new Date(y, m + 1, 0);
   const sdow  = (first.getDay() + 6) % 7; // Monday-first
+
+  // Update month label
+  const label = first.toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
+  document.getElementById('calMonthLabel').textContent =
+    label.charAt(0).toUpperCase() + label.slice(1);
+
+  // Disable next month if it's in the future
+  const nowY = new Date().getFullYear(), nowM = new Date().getMonth();
+  document.getElementById('nextMonth').disabled = (y > nowY || (y === nowY && m >= nowM));
 
   const ne = document.getElementById('calDayNames');
   const ce = document.getElementById('calCells');
@@ -371,7 +392,6 @@ function renderCal() {
         selDate = ds;
         renderDateNav();
         renderActionBtn();
-        renderCal();
         document.querySelector('.action-area').scrollIntoView({ behavior: 'smooth' });
       });
     }
@@ -380,48 +400,102 @@ function renderCal() {
 }
 
 // ══════════════════════════════════════════════════════
-//  CHART — días completados por semana (max 7)
+//  CHART — 3 modes: days / weeks / months
 // ══════════════════════════════════════════════════════
+function setChartMode(mode) {
+  chartMode = mode;
+  ['days','weeks','months'].forEach(m => {
+    const el = document.getElementById(`tab${m.charAt(0).toUpperCase()+m.slice(1)}`);
+    if (el) el.classList.toggle('active', m === mode);
+  });
+  renderChart();
+}
+
+function chartColors(n, isCur, maxVal) {
+  const ratio = maxVal > 0 ? n / maxVal : 0;
+  const alpha  = isCur ? 0.08 : 0.12;
+  const salpha = isCur ? 0.40 : 0.70;
+  if (ratio >= 0.85) return { fill: `rgba(22,101,52,${alpha})`,   stroke: `rgba(22,101,52,${salpha})` };
+  if (ratio >= 0.55) return { fill: `rgba(34,197,94,${alpha})`,   stroke: `rgba(34,197,94,${salpha})` };
+  if (ratio >= 0.25) return { fill: `rgba(202,138,4,${alpha})`,   stroke: `rgba(202,138,4,${salpha})` };
+  return                    { fill: `rgba(185,28,28,${alpha})`,   stroke: `rgba(185,28,28,${salpha})` };
+}
+
 function renderChart() {
   const logs = allData.filter(l => l.habit_id === currentKey);
-
-  // Agrupa por semana usando año+semana como clave única
-  const wm = {};
-  logs.forEach(l => {
-    const d   = parseDate(l.fecha);
-    const wk  = wkNum(d);
-    const yr  = d.getFullYear();
-    const key = `${yr}-${String(wk).padStart(2,'0')}`;
-    if (!wm[key]) wm[key] = { label: `Sem ${wk}`, done: 0, year: yr, week: wk };
-    if (l.value === 1) wm[key].done++;
-  });
-
-  const sorted     = Object.entries(wm).sort(([a],[b]) => a.localeCompare(b));
-  const nowWeek    = wkNum(new Date());
-  const nowYear    = new Date().getFullYear();
-
-  const labels     = sorted.map(([, v]) => v.label);
-  const counts     = sorted.map(([, v]) => v.done);          // 0–7
-  const isCurrent  = sorted.map(([, v]) => v.week === nowWeek && v.year === nowYear);
-
-  // Color scale: ≥6 verde fuerte, ≥4 verde suave, ≥2 ámbar, <2 rojo
-  function fillColor(n, current) {
-    const a = current ? 0.09 : 0.13;   // semana en curso más tenue
-    if (n >= 6) return `rgba(21,128,61,${a})`;
-    if (n >= 4) return `rgba(34,197,94,${a})`;
-    if (n >= 2) return `rgba(202,138,4,${a})`;
-    return `rgba(192,27,27,${a})`;
-  }
-  function strokeColor(n, current) {
-    const a = current ? 0.45 : 0.75;
-    if (n >= 6) return `rgba(21,128,61,${a})`;
-    if (n >= 4) return `rgba(34,197,94,${a})`;
-    if (n >= 2) return `rgba(202,138,4,${a})`;
-    return `rgba(192,27,27,${a})`;
-  }
-
-  const ctx = document.getElementById('weekChart').getContext('2d');
+  const today = todayStr();
+  const ctx   = document.getElementById('weekChart').getContext('2d');
   if (wChart) wChart.destroy();
+
+  let labels, counts, isCurrent, maxY, tooltipLabel;
+
+  // ── MODE: DAYS (last 35 days) ──
+  if (chartMode === 'days') {
+    const days = [];
+    for (let i = 34; i >= 0; i--) {
+      const d  = new Date();
+      d.setDate(d.getDate() - i);
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      if (ds > today) continue;
+      const val = getLogValue(currentKey, ds);
+      const shortLabel = d.toLocaleDateString('es-EC', { day: 'numeric', month: 'short' });
+      days.push({ label: shortLabel, done: val === 1 ? 1 : 0, isCur: ds === today });
+    }
+    labels    = days.map(d => d.label);
+    counts    = days.map(d => d.done);
+    isCurrent = days.map(d => d.isCur);
+    maxY      = 1;
+    tooltipLabel = c => `  ${c.parsed.y === 1 ? 'Completado ✓' : 'No completado'}`;
+  }
+
+  // ── MODE: WEEKS ──
+  else if (chartMode === 'weeks') {
+    const wm = {};
+    logs.forEach(l => {
+      const d   = parseDate(l.fecha);
+      const wk  = wkNum(d);
+      const yr  = d.getFullYear();
+      const key = `${yr}-${String(wk).padStart(2,'0')}`;
+      if (!wm[key]) wm[key] = { label: `Sem ${wk}`, done: 0, year: yr, week: wk };
+      if (l.value === 1) wm[key].done++;
+    });
+    const sorted = Object.entries(wm).sort(([a],[b]) => a.localeCompare(b));
+    const nowWk  = wkNum(new Date()), nowYr = new Date().getFullYear();
+    labels    = sorted.map(([,v]) => v.label);
+    counts    = sorted.map(([,v]) => v.done);
+    isCurrent = sorted.map(([,v]) => v.week === nowWk && v.year === nowYr);
+    maxY      = 7;
+    tooltipLabel = c => `  ${c.parsed.y} / 7 días ✓`;
+  }
+
+  // ── MODE: MONTHS ──
+  else {
+    const mm = {};
+    logs.forEach(l => {
+      const d   = parseDate(l.fecha);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      if (!mm[key]) {
+        const lbl = d.toLocaleDateString('es-EC', { month: 'short', year: '2-digit' });
+        mm[key] = { label: lbl.charAt(0).toUpperCase() + lbl.slice(1), done: 0, total: 0 };
+      }
+      mm[key].total++;
+      if (l.value === 1) mm[key].done++;
+    });
+    const sorted = Object.entries(mm).sort(([a],[b]) => a.localeCompare(b));
+    const nowKey = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+    labels    = sorted.map(([,v]) => v.label);
+    counts    = sorted.map(([,v]) => v.done);
+    isCurrent = sorted.map(([k]) => k === nowKey);
+    maxY      = Math.max(...sorted.map(([,v]) => v.total), 1);
+    tooltipLabel = (c, i) => {
+      const v = sorted[c.dataIndex];
+      return v ? `  ${c.parsed.y} / ${v[1].total} días ✓` : '';
+    };
+  }
+
+  const maxVal = Math.max(...counts, 1);
+  const bgs    = counts.map((c,i) => chartColors(c, isCurrent[i], chartMode === 'days' ? 1 : maxY).fill);
+  const bds    = counts.map((c,i) => chartColors(c, isCurrent[i], chartMode === 'days' ? 1 : maxY).stroke);
 
   wChart = new Chart(ctx, {
     type: 'bar',
@@ -429,8 +503,8 @@ function renderChart() {
       labels,
       datasets: [{
         data:            counts,
-        backgroundColor: counts.map((c,i) => fillColor(c, isCurrent[i])),
-        borderColor:     counts.map((c,i) => strokeColor(c, isCurrent[i])),
+        backgroundColor: bgs,
+        borderColor:     bds,
         borderWidth:     1.5,
         borderRadius:    6,
         borderSkipped:   false,
@@ -443,37 +517,46 @@ function renderChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            title: (items) => {
+            title: items => {
               const i = items[0].dataIndex;
               return isCurrent[i] ? `${labels[i]}  (en curso)` : labels[i];
             },
-            label: c => `  ${c.parsed.y} / 7 días ✓`,
+            label: tooltipLabel,
           },
-          backgroundColor: '#1A1714',
-          titleColor:      '#F5F3F0',
-          bodyColor:       '#ABA79F',
+          backgroundColor: '#111110',
+          titleColor:      '#F4F2EF',
+          bodyColor:       '#A39F97',
           padding:         10,
           cornerRadius:    8,
           displayColors:   false,
-          titleFont: { family: 'DM Sans', weight: '600', size: 12 },
+          titleFont: { family: 'Inter', weight: '600', size: 12 },
           bodyFont:  { family: 'DM Mono', size: 13 },
         },
       },
       scales: {
         y: {
           min: 0,
-          max: 7,
+          max: chartMode === 'days' ? 1 : maxY,
           ticks: {
-            stepSize: 1,
-            font:  { size: 10, family: 'DM Mono' },
-            color: '#ABA79F',
-            callback: v => v === 7 ? '7 ✓' : v === 0 ? '' : String(v),
+            stepSize: chartMode === 'days' ? 1 : 1,
+            font:     { size: 10, family: 'DM Mono' },
+            color:    '#A39F97',
+            callback: v => {
+              if (chartMode === 'days') return v === 1 ? '✓' : '';
+              if (v === maxY) return `${maxY} ✓`;
+              return v === 0 ? '' : String(v);
+            },
           },
-          grid:   { color: 'rgba(26,23,20,0.04)', drawTicks: false },
+          grid:   { color: 'rgba(17,17,16,0.04)', drawTicks: false },
           border: { display: false },
         },
         x: {
-          ticks: { font: { size: 10, family: 'DM Mono' }, color: '#ABA79F', maxRotation: 0 },
+          ticks: {
+            font:        { size: 9, family: 'DM Mono' },
+            color:       '#A39F97',
+            maxRotation: chartMode === 'days' ? 45 : 0,
+            maxTicksLimit: chartMode === 'days' ? 12 : 24,
+          },
           grid:   { display: false },
           border: { display: false },
         },

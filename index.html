@@ -142,8 +142,19 @@
     </div>
 
     <section class="section-block">
-      <h3 class="section-title">Calendario</h3>
-      <div class="cal-wrap">
+      <div class="cal-header">
+        <h3 class="section-title" style="margin-bottom:0;">Calendario</h3>
+        <div class="cal-month-nav">
+          <button class="cal-mnav-btn" id="prevMonth" onclick="shiftCalMonth(-1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <span class="cal-month-label" id="calMonthLabel">—</span>
+          <button class="cal-mnav-btn" id="nextMonth" onclick="shiftCalMonth(1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="cal-wrap" style="margin-top:10px;">
         <div class="cal-grid" id="calDayNames"></div>
         <div style="height:5px;"></div>
         <div class="cal-grid" id="calCells"></div>
@@ -151,8 +162,15 @@
     </section>
 
     <section class="section-block" style="padding-bottom:52px;">
-      <h3 class="section-title">Días completados por semana</h3>
-      <div class="chart-wrap">
+      <div class="chart-header">
+        <h3 class="section-title" style="margin-bottom:0;">Progreso</h3>
+        <div class="chart-tabs">
+          <button class="chart-tab active" id="tabDays"   onclick="setChartMode('days')">Días</button>
+          <button class="chart-tab"        id="tabWeeks"  onclick="setChartMode('weeks')">Semanas</button>
+          <button class="chart-tab"        id="tabMonths" onclick="setChartMode('months')">Meses</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="margin-top:10px;">
         <canvas id="weekChart"></canvas>
       </div>
     </section>
