@@ -141,23 +141,51 @@ function stats(habitId) {
   const done   = sorted.filter(l => l.value === 1).length;
   const pct    = total > 0 ? Math.round((done / total) * 100) : 0;
 
-  // Current streak backwards from today
+  // Map de fecha → valor para lookup rápido
   const byDate = {};
   sorted.forEach(l => { byDate[l.fecha] = l.value; });
+
+  // ── Racha actual: días consecutivos hacia atrás desde hoy ──
+  // Un día sin registro (undefined) rompe la racha igual que un 0.
   let cur = 0;
-  const d = new Date(todayStr());
+  const d = new Date(todayStr() + 'T00:00:00');
   while (true) {
-    const ds = d.toISOString().slice(0, 10);
-    if (byDate[ds] === 1) { cur++; d.setDate(d.getDate() - 1); }
-    else break;
+    const y  = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const dy = String(d.getDate()).padStart(2, '0');
+    const ds = `${y}-${mo}-${dy}`;
+    if (byDate[ds] === 1) {
+      cur++;
+      d.setDate(d.getDate() - 1);
+    } else {
+      break;
+    }
   }
 
-  // Best streak
-  let best = 0, c = 0;
-  sorted.forEach(l => {
-    if (l.value === 1) { c++; if (c > best) best = c; }
-    else c = 0;
-  });
+  // ── Mejor racha histórica ──
+  // Itera cada día del calendario entre el primer y último log,
+  // así los días sin registro rompen la racha correctamente.
+  let best = 0;
+  if (sorted.length > 0) {
+    const firstDate = parseDate(sorted[0].fecha);
+    const lastDate  = parseDate(todayStr());
+    let streak = 0;
+    const iter = new Date(firstDate);
+    while (iter <= lastDate) {
+      const y  = iter.getFullYear();
+      const mo = String(iter.getMonth() + 1).padStart(2, '0');
+      const dy = String(iter.getDate()).padStart(2, '0');
+      const ds = `${y}-${mo}-${dy}`;
+      if (byDate[ds] === 1) {
+        streak++;
+        if (streak > best) best = streak;
+      } else {
+        streak = 0;
+      }
+      iter.setDate(iter.getDate() + 1);
+    }
+  }
+
 
   return { pct, cur, best };
 }
