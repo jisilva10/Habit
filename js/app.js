@@ -45,7 +45,11 @@ async function sb(path, { method = 'GET', body, prefer } = {}) {
 //  UTILS
 // ══════════════════════════════════════════════════════
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
 }
 function parseDate(s) {
   return new Date(s + 'T00:00:00');
@@ -265,16 +269,43 @@ function shiftDay(dir) {
 }
 
 function renderActionBtn() {
-  const done = getLogValue(currentKey, selDate) === 1;
-  const btn  = document.getElementById('btnDone');
-  btn.classList.toggle('active-state', done);
-  document.getElementById('btnDoneLabel').textContent = done ? 'Completado ✓' : 'Marcar hecho';
+  const val = getLogValue(currentKey, selDate);
+  const isDone   = val === 1;
+  const isMiss   = val === 0;
+  const isNeutral = val === undefined;
+
+  const btnDone   = document.getElementById('btnDone');
+  const btnUndone = document.getElementById('btnUndone');
+  const btnNeutral= document.getElementById('btnNeutral');
+
+  btnDone.classList.toggle('active-state', isDone);
+  btnUndone.classList.toggle('active-state', isMiss);
+  if (btnNeutral) btnNeutral.classList.toggle('active-state', isNeutral);
 }
 
 // ══════════════════════════════════════════════════════
 //  MARK DAY
 // ══════════════════════════════════════════════════════
 async function markDay(val) {
+  if (val === -1) {
+    // Neutral: remove log entry
+    allData = allData.filter(l => !(l.habit_id === currentKey && l.fecha === selDate));
+    renderActionBtn();
+    renderDetail();
+    renderHome();
+    showToast('Sin dato — registro eliminado');
+    try {
+      await sb(`logs?habit_id=eq.${currentKey}&fecha=eq.${selDate}`, {
+        method: 'DELETE',
+        prefer: 'return=minimal',
+      });
+    } catch (e) {
+      showToast(`❌ ${e.message.slice(0, 60)}`);
+      console.error('markDay delete error:', e);
+    }
+    return;
+  }
+
   // Optimistic UI update
   const existing = allData.find(l => l.habit_id === currentKey && l.fecha === selDate);
   if (existing) existing.value = val;
@@ -283,7 +314,7 @@ async function markDay(val) {
   renderActionBtn();
   renderDetail();
   renderHome();
-  showToast(val === 1 ? '¡Marcado! ✓' : 'Desmarcado');
+  showToast(val === 1 ? '¡Marcado! ✓' : 'No hecho');
 
   // Persist — on_conflict especifica la restricción unique (habit_id, fecha)
   try {
@@ -361,7 +392,7 @@ function renderChart() {
     const wk  = wkNum(d);
     const yr  = d.getFullYear();
     const key = `${yr}-${String(wk).padStart(2,'0')}`;
-    if (!wm[key]) wm[key] = { label: `S${wk}`, done: 0, year: yr, week: wk };
+    if (!wm[key]) wm[key] = { label: `Sem ${wk}`, done: 0, year: yr, week: wk };
     if (l.value === 1) wm[key].done++;
   });
 
