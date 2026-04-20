@@ -760,6 +760,13 @@ body {
 }
 .cal-cell.today-cell .day-num { color: var(--ink); font-weight: 800; }
 
+/* Día seleccionado (selDate ≠ today) — contorno negro */
+.cal-cell.sel-day {
+  border-color: var(--ink) !important;
+  box-shadow: 0 0 0 1.5px var(--ink);
+}
+.cal-cell.sel-day .day-num { color: var(--ink); font-weight: 700; }
+
 /* Chart */
 .chart-header {
   display: flex;

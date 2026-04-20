@@ -400,16 +400,18 @@ function renderCal() {
   }
 
   for (let day = 1; day <= last.getDate(); day++) {
-    const ds      = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    const isFut   = ds > today;
-    const isToday = ds === today;
-    const val     = getLogValue(currentKey, ds);
+    const ds       = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const isFut    = ds > today;
+    const isToday  = ds === today;
+    const isSel    = ds === selDate;
+    const val      = getLogValue(currentKey, ds);
 
     let cls = 'cal-cell';
     if (isFut)                  cls += ' future';
     else if (val === 1)         cls += ' done-day';
     else if (val !== undefined) cls += ' miss-day';
     if (isToday)                cls += ' today-cell';
+    if (isSel && !isToday)      cls += ' sel-day';
 
     const c = document.createElement('div');
     c.className = cls;
@@ -420,6 +422,7 @@ function renderCal() {
         selDate = ds;
         renderDateNav();
         renderActionBtn();
+        renderCal();
         document.querySelector('.action-area').scrollIntoView({ behavior: 'smooth' });
       });
     }
