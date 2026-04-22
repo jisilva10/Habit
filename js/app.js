@@ -146,9 +146,11 @@ function stats(habitId) {
   sorted.forEach(l => { byDate[l.fecha] = l.value; });
 
   // ── Racha actual: días consecutivos hacia atrás desde hoy ──
-  // Un día sin registro (undefined) rompe la racha igual que un 0.
+  // Si hoy no tiene registro (undefined), vemos desde ayer sin romper la racha.
+  // Si cualquier día pasado es undefined o 0, rompe la racha.
   let cur = 0;
-  const d = new Date(todayStr() + 'T00:00:00');
+  const todayDateStr = todayStr();
+  const d = new Date(todayDateStr + 'T00:00:00');
   while (true) {
     const y  = d.getFullYear();
     const mo = String(d.getMonth() + 1).padStart(2, '0');
@@ -156,6 +158,8 @@ function stats(habitId) {
     const ds = `${y}-${mo}-${dy}`;
     if (byDate[ds] === 1) {
       cur++;
+      d.setDate(d.getDate() - 1);
+    } else if (byDate[ds] === undefined && ds === todayDateStr) {
       d.setDate(d.getDate() - 1);
     } else {
       break;
