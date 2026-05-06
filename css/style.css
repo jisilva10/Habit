@@ -1165,20 +1165,29 @@ body {
 
 /* Compact grid for Gym when days > 4 */
 .habits-grid.grid-compact {
-  gap: 10px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .habits-grid.grid-compact .habit-card {
-  padding: 12px;
-  gap: 6px;
+  padding: 12px 10px;
+  gap: 4px;
+  aspect-ratio: auto;
+  min-height: 90px;
+  border-radius: var(--r-lg);
 }
 
 .habits-grid.grid-compact .card-name {
-  font-size: 14px !important;
+  font-size: 13px !important;
 }
 
 .habits-grid.grid-compact .card-bar-track {
-  height: 4px;
+  height: 3px;
+  margin: 6px 0;
+}
+
+.habits-grid.grid-compact .card-pct {
+  font-size: 18px;
 }
 
 /* Modals */
