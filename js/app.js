@@ -860,15 +860,9 @@ function renderGym() {
     
     card.innerHTML = `
       <div class="card-strip"></div>
-      <div class="card-top">
-        <div class="card-name" style="font-size: 16px;">${title}</div>
-        <div class="card-status-dot"></div>
-      </div>
-      <div class="card-bar-track">
-        <div class="card-bar-fill" style="width:${isDone ? '100%' : '0%'}"></div>
-      </div>
-      <div class="card-footer">
-        <span class="card-pct ${isDone ? 'high' : isMiss ? 'low' : ''}">${isDone ? '✓' : isMiss ? '✗' : '-'}</span>
+      <div class="card-top" style="height: 100%; display: flex; align-items: center; justify-content: center; position: relative; padding-bottom: 0;">
+        <div class="card-name" style="font-size: 18px; text-align: center;">${title}</div>
+        <div class="card-status-dot" style="position: absolute; right: 0; top: 0;"></div>
       </div>
     `;
     card.onclick = () => openGymDetail(i, safeTitle, safeContent);

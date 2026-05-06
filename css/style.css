@@ -1150,10 +1150,11 @@ body {
 .hidden { display: none !important; }
 
 .readonly-content {
-  background: var(--raised);
-  padding: 12px;
+  background: var(--surface);
+  padding: 20px;
   border-radius: var(--r-md);
-  border: 1.5px dashed var(--card-border);
+  border: none;
+  text-align: center;
 }
 
 .readonly-content:empty::before {
@@ -1163,31 +1164,43 @@ body {
   font-family: var(--ff);
 }
 
-/* Compact grid for Gym when days > 4 */
+/* Force Gym screen to be fixed and non-scrollable */
+#gym.active {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 80px; /* Space for nav */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+  height: calc(100dvh - 80px);
+}
+#gym .home-header {
+  flex-shrink: 0;
+}
+#gymRoutinesScroll {
+  flex-shrink: 0;
+}
+#gymGridContainer {
+  flex: 1;
+  overflow: hidden;
+  align-content: start;
+}
+
+/* Compact grid for Gym */
 .habits-grid.grid-compact {
-  gap: 8px;
+  gap: 12px;
   margin-top: 12px;
 }
 
 .habits-grid.grid-compact .habit-card {
-  padding: 12px 10px;
-  gap: 4px;
+  padding: 16px;
   aspect-ratio: auto;
-  min-height: 90px;
+  min-height: 85px;
   border-radius: var(--r-lg);
-}
-
-.habits-grid.grid-compact .card-name {
-  font-size: 13px !important;
-}
-
-.habits-grid.grid-compact .card-bar-track {
-  height: 3px;
-  margin: 6px 0;
-}
-
-.habits-grid.grid-compact .card-pct {
-  font-size: 18px;
+  justify-content: center;
 }
 
 /* Modals */

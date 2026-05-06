@@ -245,17 +245,15 @@
       </div>
     </div>
 
-    <div class="detail-hero" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-      <label class="field-label" style="margin-bottom:0;">Título del entrenamiento</label>
-      <input class="field-input" id="gymDetailTitle" type="text" placeholder="ej. Push, Pierna..." maxlength="40" autocomplete="off" style="font-size: 24px; font-weight: 800; height: auto; padding: 4px 0; border: none; background: transparent; margin-bottom: 0;">
+    <div class="detail-hero" style="flex-direction: column; align-items: center; justify-content: center; gap: 0; padding-top: 10px;">
+      <input class="field-input" id="gymDetailTitle" type="text" placeholder="ej. Push, Pierna..." maxlength="40" autocomplete="off" style="font-size: 32px; font-weight: 900; text-align: center; height: auto; padding: 0; border: none; background: transparent; margin-bottom: 0;">
     </div>
   </div>
 
   <div class="detail-scroll">
     <div class="section-block">
-      <label class="field-label">Ejercicios o Tareas</label>
-      <div id="gymDetailContentReadonly" class="field-input readonly-content" style="min-height: 120px; white-space: pre-wrap; font-family: var(--ff-mono); font-size: 13px; color: var(--ink);"></div>
-      <textarea class="field-input hidden" id="gymDetailContent" rows="10" placeholder="ej. 4x10 Press Banca..." style="resize: vertical; height: auto; padding-top: 12px; font-family: var(--ff-mono); font-size: 13px; margin-bottom: 8px;"></textarea>
+      <div id="gymDetailContentReadonly" class="field-input readonly-content" style="min-height: 150px; white-space: pre-wrap; font-family: var(--ff); font-size: 18px; line-height: 1.6; color: var(--ink);"></div>
+      <textarea class="field-input hidden" id="gymDetailContent" rows="8" placeholder="ej. 4x10 Press Banca..." style="resize: none; height: auto; padding: 20px; font-family: var(--ff); font-size: 18px; line-height: 1.6; text-align: center; border: none; background: var(--surface); margin-bottom: 8px;"></textarea>
       <button class="ghost-btn" id="gymEditContentBtn" onclick="toggleGymEditMode()" style="width: 100%; margin-top: 8px;">Editar Ejercicios</button>
     </div>
 
