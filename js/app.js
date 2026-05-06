@@ -835,9 +835,15 @@ function renderGym() {
 
   let doneCount = 0;
 
+  if (routine.days_count > 4) {
+    container.classList.add('grid-compact');
+  } else {
+    container.classList.remove('grid-compact');
+  }
+
   for (let i = 0; i < routine.days_count; i++) {
     const dayData = gymDays.find(d => d.routine_id === routine.id && d.day_index === i);
-    const title = dayData && dayData.title ? dayData.title : `Día ${i + 1}`;
+    const title = dayData && dayData.title ? dayData.title : 'Sin título';
     const content = dayData ? dayData.content : '';
     const status = getGymLogValue(routine.id, i, currentGymWeek);
 
@@ -873,6 +879,30 @@ function renderGym() {
   document.getElementById('gymWeekScore').textContent = `${doneCount}/${routine.days_count}`;
   const pct = Math.round((doneCount / routine.days_count) * 100) || 0;
   document.getElementById('gymWeekPct').textContent = `${pct}% completado`;
+}
+
+async function deleteCurrentSplit() {
+  if (!selectedRoutineId) return;
+  const routine = gymRoutines.find(r => r.id === selectedRoutineId);
+  if (!routine) return;
+  
+  if (!confirm(`¿Eliminar el split "${routine.name}" y todos sus entrenamientos?`)) return;
+
+  const id = selectedRoutineId;
+  
+  // Optimistic update
+  gymRoutines = gymRoutines.filter(r => r.id !== id);
+  gymDays = gymDays.filter(d => d.routine_id !== id);
+  gymLogs = gymLogs.filter(l => l.routine_id !== id);
+  selectedRoutineId = gymRoutines.length > 0 ? gymRoutines[0].id : null;
+  renderGym();
+  showToast('Split eliminado');
+
+  try {
+    await sb(`gym_routines?id=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' });
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 function openAddGymRoutineModal() {
@@ -918,8 +948,15 @@ async function submitNewGymRoutine() {
 
 function openGymDetail(index, title, content) {
   editDayIndex = index;
-  document.getElementById('gymDetailTitle').value = title;
+  document.getElementById('gymDetailTitle').value = title === 'Sin título' ? '' : title;
+  
   document.getElementById('gymDetailContent').value = content;
+  document.getElementById('gymDetailContentReadonly').textContent = content;
+  
+  // Reset to readonly mode
+  document.getElementById('gymDetailContent').classList.add('hidden');
+  document.getElementById('gymDetailContentReadonly').classList.remove('hidden');
+  document.getElementById('gymEditContentBtn').classList.remove('hidden');
   
   // Render active states of buttons
   const status = getGymLogValue(selectedRoutineId, index, currentGymWeek);
@@ -931,32 +968,46 @@ function openGymDetail(index, title, content) {
   document.getElementById('gymDetail').classList.add('active');
 }
 
-function closeGymDetail() {
-  document.getElementById('gymDetail').classList.remove('active');
-  document.getElementById('gym').classList.add('active');
-  editDayIndex = null;
-  renderGym();
+function toggleGymEditMode() {
+  document.getElementById('gymDetailContentReadonly').classList.add('hidden');
+  document.getElementById('gymEditContentBtn').classList.add('hidden');
+  document.getElementById('gymDetailContent').classList.remove('hidden');
+  document.getElementById('gymDetailContent').focus();
 }
 
-async function submitEditGymDay() {
-  const title = document.getElementById('gymDetailTitle').value.trim() || `Día ${editDayIndex + 1}`;
-  const content = document.getElementById('gymDetailContent').value.trim();
-
-  try {
-    const existing = gymDays.find(d => d.routine_id === selectedRoutineId && d.day_index === editDayIndex);
-    if (existing) {
-      await sb(`gym_days?id=eq.${existing.id}`, { method: 'PATCH', body: { title, content } });
-      existing.title = title;
-      existing.content = content;
-    } else {
-      const res = await sb('gym_days', { method: 'POST', body: { routine_id: selectedRoutineId, day_index: editDayIndex, title, content } });
-      gymDays.push(res[0]);
+async function closeGymDetail() {
+  document.getElementById('gymDetail').classList.remove('active');
+  document.getElementById('gym').classList.add('active');
+  
+  // Auto-save on back
+  const titleVal = document.getElementById('gymDetailTitle').value.trim();
+  const contentVal = document.getElementById('gymDetailContent').value.trim();
+  
+  const existing = gymDays.find(d => d.routine_id === selectedRoutineId && d.day_index === editDayIndex);
+  
+  // Check if anything changed
+  const oldTitle = existing && existing.title ? existing.title : '';
+  const oldContent = existing && existing.content ? existing.content : '';
+  
+  if (oldTitle !== titleVal || oldContent !== contentVal) {
+    showToast('Guardando...');
+    try {
+      if (existing) {
+        await sb(`gym_days?id=eq.${existing.id}`, { method: 'PATCH', body: { title: titleVal, content: contentVal } });
+        existing.title = titleVal;
+        existing.content = contentVal;
+      } else {
+        const res = await sb('gym_days', { method: 'POST', body: { routine_id: selectedRoutineId, day_index: editDayIndex, title: titleVal, content: contentVal } });
+        gymDays.push(res[0]);
+      }
+    } catch(e) {
+      console.error(e);
+      showToast('Error al guardar cambios');
     }
-    showToast('Día guardado');
-  } catch(e) {
-    showToast('Error al guardar');
-    console.error(e);
   }
+
+  editDayIndex = null;
+  renderGym();
 }
 
 async function markGymDay(val) {

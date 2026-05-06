@@ -1144,7 +1144,42 @@ body {
 
 /* Grid for Gym Days is now handled by .habits-grid */
 
-/* Removed inline Gym Day classes since we use habit-card and gymDetail */
+/* ══════════════════════════════════════════════════════
+   GYM REFINEMENTS
+══════════════════════════════════════════════════════ */
+.hidden { display: none !important; }
+
+.readonly-content {
+  background: var(--raised);
+  padding: 12px;
+  border-radius: var(--r-md);
+  border: 1.5px dashed var(--card-border);
+}
+
+.readonly-content:empty::before {
+  content: 'Sin ejercicios... toca "Editar Ejercicios" para agregar.';
+  color: var(--ink-3);
+  font-style: italic;
+  font-family: var(--ff);
+}
+
+/* Compact grid for Gym when days > 4 */
+.habits-grid.grid-compact {
+  gap: 10px;
+}
+
+.habits-grid.grid-compact .habit-card {
+  padding: 12px;
+  gap: 6px;
+}
+
+.habits-grid.grid-compact .card-name {
+  font-size: 14px !important;
+}
+
+.habits-grid.grid-compact .card-bar-track {
+  height: 4px;
+}
 
 /* Modals */
 #gymCalendarModal .sheet {
