@@ -414,7 +414,7 @@ body {
 /* ════════════════════════════════════════════════════
    DETAIL SCREEN
    ════════════════════════════════════════════════════ */
-#detail { background: var(--bg); }
+#detail, #gymDetail { background: var(--bg); }
 
 .detail-header {
   background: var(--surface);
@@ -1027,8 +1027,12 @@ body {
 @media (min-width: 700px) {
   .habits-grid { grid-template-columns: repeat(4, 1fr); }
   #home  { max-width: 860px; margin: 0 auto; }
-  #detail { max-width: 640px; margin: 0 auto; }
+  #detail, #gymDetail { max-width: 640px; margin: 0 auto; }
   .overlay .sheet { max-width: 640px; margin: 0 auto; }
+}
+
+body.no-scroll {
+  overflow: hidden;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1138,78 +1142,9 @@ body {
   border-color: var(--ink);
 }
 
-/* Grid for Gym Days */
-.gym-grid-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 40px;
-}
+/* Grid for Gym Days is now handled by .habits-grid */
 
-.gym-day-card {
-  background: var(--surface);
-  border-radius: var(--r-lg);
-  padding: 16px;
-  box-shadow: var(--s-card);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border: 1.5px solid var(--card-border);
-  transition: all 0.2s ease;
-}
-
-.gym-day-card.status-done {
-  border-color: var(--go-bd);
-  box-shadow: var(--s-card), inset 0 0 0 0.5px var(--go-bd);
-}
-
-.gym-day-card.status-miss {
-  border-color: var(--stop-bd);
-  box-shadow: var(--s-card), inset 0 0 0 0.5px var(--stop-bd);
-}
-
-.gym-day-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.gym-day-title {
-  font-weight: 800;
-  font-size: 15px;
-  color: var(--ink);
-}
-
-.gym-day-content {
-  background: var(--raised);
-  padding: 12px;
-  border-radius: var(--r-md);
-  font-family: var(--ff-mono);
-  font-size: 13px;
-  color: var(--ink);
-  white-space: pre-wrap;
-  min-height: 60px;
-  cursor: pointer;
-  border: 1.5px dashed var(--card-border);
-  transition: border 0.2s;
-}
-
-.gym-day-content:hover {
-  border-color: var(--ink-3);
-}
-
-.gym-day-content:empty::before {
-  content: 'Toca para agregar ejercicios...';
-  color: var(--ink-3);
-  font-style: italic;
-  font-family: var(--ff);
-}
-
-.gym-day-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-}
+/* Removed inline Gym Day classes since we use habit-card and gymDetail */
 
 /* Modals */
 #gymCalendarModal .sheet {

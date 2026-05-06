@@ -182,11 +182,11 @@
   <header class="home-header">
     <div class="header-row">
       <div>
-        <p class="greeting" id="gymGreet">Rutinas</p>
-        <h1 class="main-title">Gimnasio</h1>
+        <p class="greeting" id="gymGreet">Splits</p>
+        <h1 class="main-title">Gym</h1>
       </div>
       <div class="header-actions">
-        <button class="icon-btn" onclick="openGymCalendarModal()" title="Calendario" aria-label="Calendario de rutinas">
+        <button class="icon-btn" onclick="openGymCalendarModal()" title="Calendario" aria-label="Calendario de splits">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
             <line x1="16" y1="2" x2="16" y2="6"/>
@@ -194,7 +194,7 @@
             <line x1="3" y1="10" x2="21" y2="10"/>
           </svg>
         </button>
-        <button class="icon-btn accent" onclick="openAddGymRoutineModal()" title="Nueva rutina" id="addGymRoutineBtn" aria-label="Añadir rutina">
+        <button class="icon-btn accent" onclick="openAddGymRoutineModal()" title="Nuevo split" id="addGymRoutineBtn" aria-label="Añadir split">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -214,19 +214,70 @@
     </div>
   </header>
 
-  <main class="gym-main">
-    <div class="gym-routines-scroll" id="gymRoutinesScroll">
-      <!-- Tabs de rutinas generadas dinámicamente -->
-    </div>
+  <div class="gym-routines-scroll" id="gymRoutinesScroll" style="padding: 0 24px; margin-bottom: 8px;">
+    <!-- Tabs de splits generadas dinámicamente -->
+  </div>
     
-    <div class="gym-grid-container" id="gymGridContainer">
-      <div class="empty-state" style="margin-top: 40px;">
-        <div class="empty-icon">🏋️</div>
-        <div class="empty-title">Sin rutinas</div>
-        <div class="empty-sub">Toca <strong>+</strong> para crear tu primer split de gimnasio.</div>
-      </div>
+  <main class="habits-grid" id="gymGridContainer">
+    <div class="empty-state">
+      <div class="empty-title">Sin splits</div>
+      <div class="empty-sub">Toca <strong>+</strong> para crear tu primer split.</div>
     </div>
   </main>
+</div>
+
+<!-- ═══════════════ GYM DETAIL ═══════════════ -->
+<div id="gymDetail" class="screen">
+  <div class="detail-header">
+    <div class="detail-nav">
+      <button class="back-btn" onclick="closeGymDetail()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Atrás
+      </button>
+      <div class="detail-nav-right">
+        <button class="icon-btn sm" onclick="submitEditGymDay()" title="Guardar" aria-label="Guardar día">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="detail-hero" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+      <label class="field-label" style="margin-bottom:0;">Título del entrenamiento</label>
+      <input class="field-input" id="gymDetailTitle" type="text" placeholder="ej. Push, Pierna..." maxlength="40" autocomplete="off" style="font-size: 24px; font-weight: 800; height: auto; padding: 4px 0; border: none; background: transparent; margin-bottom: 0;">
+    </div>
+  </div>
+
+  <div class="detail-scroll">
+    <div class="section-block">
+      <label class="field-label" for="gymDetailContent">Ejercicios o Tareas</label>
+      <textarea class="field-input" id="gymDetailContent" rows="10" placeholder="ej. 4x10 Press Banca..." style="resize: vertical; height: auto; padding-top: 12px; font-family: var(--ff-mono); font-size: 13px;"></textarea>
+    </div>
+
+    <div class="action-area" style="padding-bottom: 52px;">
+      <button class="action-btn btn-done" id="gymBtnDone" onclick="markGymDay(1)">
+        <span class="action-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+        <span class="action-label">Hecho</span>
+      </button>
+      <button class="action-btn btn-neutral" id="gymBtnNeutral" onclick="markGymDay(-1)">
+        <span class="action-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        </span>
+        <span class="action-label">Sin dato</span>
+      </button>
+      <button class="action-btn btn-undone" id="gymBtnUndone" onclick="markGymDay(0)">
+        <span class="action-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </span>
+        <span class="action-label">No hecho</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 
@@ -262,28 +313,16 @@
   </div>
 </div>
 
-<!-- ═══════════════ MODAL: ADD GYM ROUTINE ═══════════════ -->
+<!-- ═══════════════ MODAL: ADD GYM SPLIT ═══════════════ -->
 <div class="overlay" id="addGymRoutineModal" onclick="bgClick(event,'addGymRoutineModal',closeAddGymRoutineModal)">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h2 class="sheet-title">Nueva Rutina (Split)</h2>
-    <label class="field-label" for="gymRoutineName">Nombre de la rutina</label>
+    <h2 class="sheet-title">Nuevo Split</h2>
+    <label class="field-label" for="gymRoutineName">Nombre del split</label>
     <input class="field-input" id="gymRoutineName" type="text" placeholder="ej. Push Pull Legs" maxlength="40" autocomplete="off">
-    <label class="field-label" for="gymRoutineDays">Días en la semana (1 a 7)</label>
+    <label class="field-label" for="gymRoutineDays">Entrenamientos en la semana (1 a 7)</label>
     <input class="field-input" id="gymRoutineDays" type="number" min="1" max="7" value="3" placeholder="ej. 3" autocomplete="off">
-    <button class="primary-btn" id="submitGymRoutine" onclick="submitNewGymRoutine()">Crear Rutina</button>
-  </div>
-</div>
-
-<!-- ═══════════════ MODAL: EDIT GYM DAY ═══════════════ -->
-<div class="overlay" id="editGymDayModal" onclick="bgClick(event,'editGymDayModal',closeEditGymDayModal)">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <h2 class="sheet-title" id="editGymDayTitle">Editar Día</h2>
-    <label class="field-label" for="gymDayContent">Ejercicios o Tareas</label>
-    <textarea class="field-input" id="gymDayContent" rows="6" placeholder="ej. 4x10 Press Banca..." style="resize: vertical;"></textarea>
-    <button class="primary-btn" id="submitGymDay" onclick="submitEditGymDay()">Guardar cambios</button>
-    <button class="ghost-btn" onclick="closeEditGymDayModal()">Cancelar</button>
+    <button class="primary-btn" id="submitGymRoutine" onclick="submitNewGymRoutine()">Crear Split</button>
   </div>
 </div>
 
@@ -291,7 +330,7 @@
 <div class="overlay" id="gymCalendarModal" onclick="bgClick(event,'gymCalendarModal',closeGymCalendarModal)">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h2 class="sheet-title">Progreso de Rutinas</h2>
+    <h2 class="sheet-title">Progreso de Splits</h2>
     <div class="chart-wrap" style="margin-top:10px;">
       <canvas id="gymChart"></canvas>
     </div>
@@ -312,7 +351,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M6 5v14M18 5v14M2 12h20M4 7h16M4 17h16"></path>
     </svg>
-    <span>Gimnasio</span>
+    <span>Gym</span>
   </button>
 </nav>
 

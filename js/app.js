@@ -663,10 +663,12 @@ function openAddModal() {
   const btn = document.getElementById('submitHabit');
   btn.disabled = false; btn.textContent = 'Crear hábito';
   document.getElementById('addModal').classList.add('open');
+  document.body.classList.add('no-scroll');
   setTimeout(() => document.getElementById('habitName').focus(), 370);
 }
 function closeAddModal() {
   document.getElementById('addModal').classList.remove('open');
+  document.body.classList.remove('no-scroll');
 }
 
 async function submitNewHabit() {
@@ -712,10 +714,12 @@ function openEditModal() {
   const btn = document.getElementById('submitEdit');
   btn.disabled = false; btn.textContent = 'Guardar cambios';
   document.getElementById('editModal').classList.add('open');
+  document.body.classList.add('no-scroll');
   setTimeout(() => document.getElementById('editHabitName').focus(), 370);
 }
 function closeEditModal() {
   document.getElementById('editModal').classList.remove('open');
+  document.body.classList.remove('no-scroll');
 }
 
 async function submitEditHabit() {
@@ -802,10 +806,9 @@ function renderGym() {
   
   if (gymRoutines.length === 0) {
     document.getElementById('gymGridContainer').innerHTML = `
-      <div class="empty-state" style="margin-top: 40px;">
-        <div class="empty-icon">🏋️</div>
-        <div class="empty-title">Sin rutinas</div>
-        <div class="empty-sub">Toca <strong>+</strong> para crear tu primer split de gimnasio.</div>
+      <div class="empty-state">
+        <div class="empty-title">Sin splits</div>
+        <div class="empty-sub">Toca <strong>+</strong> para crear tu primer split.</div>
       </div>
     `;
     document.getElementById('gymWeekScore').textContent = '—';
@@ -834,6 +837,7 @@ function renderGym() {
 
   for (let i = 0; i < routine.days_count; i++) {
     const dayData = gymDays.find(d => d.routine_id === routine.id && d.day_index === i);
+    const title = dayData && dayData.title ? dayData.title : `Día ${i + 1}`;
     const content = dayData ? dayData.content : '';
     const status = getGymLogValue(routine.id, i, currentGymWeek);
 
@@ -841,33 +845,27 @@ function renderGym() {
 
     const isDone = status === 1;
     const isMiss = status === 0;
-    const isNeutral = status === undefined;
 
     const card = document.createElement('div');
-    card.className = `gym-day-card ${isDone ? 'status-done' : isMiss ? 'status-miss' : ''}`;
+    card.className = `habit-card ${isDone ? 'status-done' : isMiss ? 'status-miss' : ''}`;
 
+    const safeTitle = title.replace(/'/g, "\\'");
     const safeContent = content.replace(/`/g, '\\`').replace(/'/g, "\\'");
     
     card.innerHTML = `
-      <div class="gym-day-header">
-        <div class="gym-day-title">Día ${i + 1}</div>
+      <div class="card-strip"></div>
+      <div class="card-top">
+        <div class="card-name" style="font-size: 16px;">${title}</div>
+        <div class="card-status-dot"></div>
       </div>
-      <div class="gym-day-content" onclick="openEditGymDayModal(${i}, '${safeContent.replace(/\n/g, '\\n')}')">${content}</div>
-      <div class="gym-day-actions">
-        <button class="gym-action-btn btn-done ${isDone ? 'active' : ''}" onclick="markGymDay(${i}, 1)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Hecho
-        </button>
-        <button class="gym-action-btn btn-neutral ${isNeutral ? 'active' : ''}" onclick="markGymDay(${i}, -1)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          Sin dato
-        </button>
-        <button class="gym-action-btn btn-undone ${isMiss ? 'active' : ''}" onclick="markGymDay(${i}, 0)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          No hecho
-        </button>
+      <div class="card-bar-track">
+        <div class="card-bar-fill" style="width:${isDone ? '100%' : '0%'}"></div>
+      </div>
+      <div class="card-footer">
+        <span class="card-pct ${isDone ? 'high' : isMiss ? 'low' : ''}">${isDone ? '✓' : isMiss ? '✗' : '-'}</span>
       </div>
     `;
+    card.onclick = () => openGymDetail(i, safeTitle, safeContent);
     container.appendChild(card);
   }
 
@@ -881,12 +879,14 @@ function openAddGymRoutineModal() {
   document.getElementById('gymRoutineName').value = '';
   document.getElementById('gymRoutineDays').value = '3';
   document.getElementById('submitGymRoutine').disabled = false;
-  document.getElementById('submitGymRoutine').textContent = 'Crear Rutina';
+  document.getElementById('submitGymRoutine').textContent = 'Crear Split';
   document.getElementById('addGymRoutineModal').classList.add('open');
+  document.body.classList.add('no-scroll');
 }
 
 function closeAddGymRoutineModal() {
   document.getElementById('addGymRoutineModal').classList.remove('open');
+  document.body.classList.remove('no-scroll');
 }
 
 async function submitNewGymRoutine() {
@@ -907,62 +907,69 @@ async function submitNewGymRoutine() {
     selectedRoutineId = result[0].id;
     closeAddGymRoutineModal();
     renderGym();
-    showToast(`Rutina "${name}" creada`);
+    showToast(`Split "${name}" creado`);
   } catch (e) {
-    showToast('Error al crear rutina');
+    showToast('Error al crear split');
     console.error(e);
     btn.disabled = false;
-    btn.textContent = 'Crear Rutina';
+    btn.textContent = 'Crear Split';
   }
 }
 
-function openEditGymDayModal(index, content) {
+function openGymDetail(index, title, content) {
   editDayIndex = index;
-  document.getElementById('editGymDayTitle').textContent = `Editar Día ${index + 1}`;
-  document.getElementById('gymDayContent').value = content;
-  document.getElementById('submitGymDay').disabled = false;
-  document.getElementById('submitGymDay').textContent = 'Guardar cambios';
-  document.getElementById('editGymDayModal').classList.add('open');
+  document.getElementById('gymDetailTitle').value = title;
+  document.getElementById('gymDetailContent').value = content;
+  
+  // Render active states of buttons
+  const status = getGymLogValue(selectedRoutineId, index, currentGymWeek);
+  document.getElementById('gymBtnDone').classList.toggle('active', status === 1);
+  document.getElementById('gymBtnNeutral').classList.toggle('active', status === undefined);
+  document.getElementById('gymBtnUndone').classList.toggle('active', status === 0);
+
+  document.getElementById('gym').classList.remove('active');
+  document.getElementById('gymDetail').classList.add('active');
 }
 
-function closeEditGymDayModal() {
-  document.getElementById('editGymDayModal').classList.remove('open');
+function closeGymDetail() {
+  document.getElementById('gymDetail').classList.remove('active');
+  document.getElementById('gym').classList.add('active');
   editDayIndex = null;
+  renderGym();
 }
 
 async function submitEditGymDay() {
-  const content = document.getElementById('gymDayContent').value.trim();
-  const btn = document.getElementById('submitGymDay');
-  btn.disabled = true;
-  btn.textContent = 'Guardando...';
+  const title = document.getElementById('gymDetailTitle').value.trim() || `Día ${editDayIndex + 1}`;
+  const content = document.getElementById('gymDetailContent').value.trim();
 
   try {
-    // Check if gym_day exists
     const existing = gymDays.find(d => d.routine_id === selectedRoutineId && d.day_index === editDayIndex);
     if (existing) {
-      await sb(`gym_days?id=eq.${existing.id}`, { method: 'PATCH', body: { content } });
+      await sb(`gym_days?id=eq.${existing.id}`, { method: 'PATCH', body: { title, content } });
+      existing.title = title;
       existing.content = content;
     } else {
-      const res = await sb('gym_days', { method: 'POST', body: { routine_id: selectedRoutineId, day_index: editDayIndex, content } });
+      const res = await sb('gym_days', { method: 'POST', body: { routine_id: selectedRoutineId, day_index: editDayIndex, title, content } });
       gymDays.push(res[0]);
     }
-    closeEditGymDayModal();
-    renderGym();
-    showToast('Día actualizado');
+    showToast('Día guardado');
   } catch(e) {
     showToast('Error al guardar');
     console.error(e);
-    btn.disabled = false;
-    btn.textContent = 'Guardar cambios';
   }
 }
 
-async function markGymDay(dayIndex, val) {
-  if (!selectedRoutineId) return;
+async function markGymDay(val) {
+  if (!selectedRoutineId || editDayIndex === null) return;
+  const dayIndex = editDayIndex;
+
+  // Update UI buttons optimistically
+  document.getElementById('gymBtnDone').classList.toggle('active', val === 1);
+  document.getElementById('gymBtnNeutral').classList.toggle('active', val === -1 || val === undefined);
+  document.getElementById('gymBtnUndone').classList.toggle('active', val === 0);
 
   if (val === -1) {
     gymLogs = gymLogs.filter(l => !(l.routine_id === selectedRoutineId && l.day_index === dayIndex && l.week_id === currentGymWeek));
-    renderGym();
     showToast('Sin dato');
     try {
       await sb(`gym_logs?routine_id=eq.${selectedRoutineId}&day_index=eq.${dayIndex}&week_id=eq.${currentGymWeek}`, { method: 'DELETE', prefer: 'return=minimal' });
@@ -976,7 +983,6 @@ async function markGymDay(dayIndex, val) {
   if (existing) existing.status = val;
   else gymLogs.push({ routine_id: selectedRoutineId, day_index: dayIndex, week_id: currentGymWeek, status: val });
 
-  renderGym();
   showToast(val === 1 ? '¡Día completado! ✓' : 'No hecho');
 
   try {
@@ -993,10 +999,12 @@ async function markGymDay(dayIndex, val) {
 let gymChartInstance = null;
 function openGymCalendarModal() {
   document.getElementById('gymCalendarModal').classList.add('open');
+  document.body.classList.add('no-scroll');
   renderGymChart();
 }
 function closeGymCalendarModal() {
   document.getElementById('gymCalendarModal').classList.remove('open');
+  document.body.classList.remove('no-scroll');
 }
 
 function renderGymChart() {

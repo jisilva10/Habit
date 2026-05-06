@@ -60,6 +60,7 @@ create table if not exists gym_days (
   id          uuid default gen_random_uuid() primary key,
   routine_id  uuid references gym_routines(id) on delete cascade not null,
   day_index   smallint not null,
+  title       text default '',
   content     text default '',
   created_at  timestamptz default now(),
   unique (routine_id, day_index)
