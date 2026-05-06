@@ -1030,3 +1030,189 @@ body {
   #detail { max-width: 640px; margin: 0 auto; }
   .overlay .sheet { max-width: 640px; margin: 0 auto; }
 }
+
+/* ══════════════════════════════════════════════════════
+   BOTTOM NAVIGATION
+══════════════════════════════════════════════════════ */
+body {
+  /* Make room for bottom nav */
+  padding-bottom: 70px;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 65px;
+  background: var(--bg);
+  border-top: 1.5px solid var(--card-border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--ink-3);
+  width: 70px;
+  height: 100%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-item svg {
+  width: 24px;
+  height: 24px;
+  transition: stroke 0.2s ease;
+}
+
+.nav-item span {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--ff);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.nav-item.active {
+  color: var(--ink);
+}
+
+.nav-item.active svg {
+  stroke: var(--ink);
+}
+
+.nav-item:hover:not(.active) {
+  color: var(--ink);
+}
+
+/* ══════════════════════════════════════════════════════
+   GYM SECTION
+══════════════════════════════════════════════════════ */
+#gym {
+  padding-bottom: 80px; /* Space for nav */
+}
+
+.gym-main {
+  padding: 0 20px;
+}
+
+/* Tabs for splits */
+.gym-routines-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  padding: 10px 0 20px 0;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+.gym-routines-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.gym-routine-tab {
+  padding: 10px 18px;
+  background: var(--raised);
+  color: var(--ink-2);
+  border: 1.5px solid var(--card-border);
+  border-radius: 100px;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gym-routine-tab.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+/* Grid for Gym Days */
+.gym-grid-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.gym-day-card {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  box-shadow: var(--s-card);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1.5px solid var(--card-border);
+  transition: all 0.2s ease;
+}
+
+.gym-day-card.status-done {
+  border-color: var(--go-bd);
+  box-shadow: var(--s-card), inset 0 0 0 0.5px var(--go-bd);
+}
+
+.gym-day-card.status-miss {
+  border-color: var(--stop-bd);
+  box-shadow: var(--s-card), inset 0 0 0 0.5px var(--stop-bd);
+}
+
+.gym-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gym-day-title {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.gym-day-content {
+  background: var(--raised);
+  padding: 12px;
+  border-radius: var(--r-md);
+  font-family: var(--ff-mono);
+  font-size: 13px;
+  color: var(--ink);
+  white-space: pre-wrap;
+  min-height: 60px;
+  cursor: pointer;
+  border: 1.5px dashed var(--card-border);
+  transition: border 0.2s;
+}
+
+.gym-day-content:hover {
+  border-color: var(--ink-3);
+}
+
+.gym-day-content:empty::before {
+  content: 'Toca para agregar ejercicios...';
+  color: var(--ink-3);
+  font-style: italic;
+  font-family: var(--ff);
+}
+
+.gym-day-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* Modals */
+#gymCalendarModal .sheet {
+  min-height: 60vh;
+}
+

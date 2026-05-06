@@ -21,6 +21,15 @@ let selEmoji   = EMOJIS[0];
 let editEmoji  = EMOJIS[0];
 let wChart     = null;
 
+// ── Gym State ──
+let gymRoutines = [];
+let gymDays     = [];
+let gymLogs     = [];
+let selectedRoutineId = null;
+let currentGymWeek = getWeekString(new Date());
+let editDayIndex = null;
+
+
 // ══════════════════════════════════════════════════════
 //  SUPABASE REST HELPER
 // ══════════════════════════════════════════════════════
@@ -61,6 +70,11 @@ function wkNum(date) {
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
   return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(), 0, 1))) / 86400000) + 1) / 7);
 }
+function getWeekString(date) {
+  const y = date.getFullYear();
+  const w = wkNum(date);
+  return `${y}-W${String(w).padStart(2, '0')}`;
+}
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -100,13 +114,24 @@ function loadFallback() {
 // ══════════════════════════════════════════════════════
 async function syncData() {
   try {
-    const [h, l] = await Promise.all([
+    const [h, l, gr, gd, gl] = await Promise.all([
       sb('habits?select=*&order=created_at'),
       sb('logs?select=*&order=fecha'),
+      sb('gym_routines?select=*&order=created_at'),
+      sb('gym_days?select=*&order=day_index'),
+      sb('gym_logs?select=*')
     ]);
-    habits  = Array.isArray(h) ? h : [];
-    allData = Array.isArray(l) ? l : [];
-    console.log(`✓ Supabase OK — ${habits.length} hábitos, ${allData.length} logs`);
+    habits      = Array.isArray(h) ? h : [];
+    allData     = Array.isArray(l) ? l : [];
+    gymRoutines = Array.isArray(gr) ? gr : [];
+    gymDays     = Array.isArray(gd) ? gd : [];
+    gymLogs     = Array.isArray(gl) ? gl : [];
+    
+    if (gymRoutines.length > 0 && !selectedRoutineId) {
+      selectedRoutineId = gymRoutines[0].id;
+    }
+
+    console.log(`✓ Supabase OK — ${habits.length} hábitos, ${gymRoutines.length} rutinas`);
   } catch (e) {
     console.error('Supabase error:', e.message);
     // Diagnose the type of error
@@ -122,6 +147,7 @@ async function syncData() {
     loadFallback();
   }
   renderHome();
+  renderGym();
 }
 
 // PWA refresh
@@ -755,6 +781,291 @@ function bgClick(e, id, fn) {
 }
 
 // ══════════════════════════════════════════════════════
+//  GYM TRACKER LOGIC
+// ══════════════════════════════════════════════════════
+function switchNav(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`nav${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+}
+
+function getGymLogValue(routineId, dayIndex, weekId) {
+  const log = gymLogs.find(l => l.routine_id === routineId && l.day_index === dayIndex && l.week_id === weekId);
+  return log ? log.status : undefined;
+}
+
+function renderGym() {
+  const scroll = document.getElementById('gymRoutinesScroll');
+  if(!scroll) return;
+  scroll.innerHTML = '';
+  
+  if (gymRoutines.length === 0) {
+    document.getElementById('gymGridContainer').innerHTML = `
+      <div class="empty-state" style="margin-top: 40px;">
+        <div class="empty-icon">🏋️</div>
+        <div class="empty-title">Sin rutinas</div>
+        <div class="empty-sub">Toca <strong>+</strong> para crear tu primer split de gimnasio.</div>
+      </div>
+    `;
+    document.getElementById('gymWeekScore').textContent = '—';
+    document.getElementById('gymWeekPct').textContent = '0% completado';
+    return;
+  }
+
+  gymRoutines.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = `gym-routine-tab ${r.id === selectedRoutineId ? 'active' : ''}`;
+    btn.textContent = r.name;
+    btn.onclick = () => {
+      selectedRoutineId = r.id;
+      renderGym();
+    };
+    scroll.appendChild(btn);
+  });
+
+  const routine = gymRoutines.find(r => r.id === selectedRoutineId);
+  if (!routine) return;
+
+  const container = document.getElementById('gymGridContainer');
+  container.innerHTML = '';
+
+  let doneCount = 0;
+
+  for (let i = 0; i < routine.days_count; i++) {
+    const dayData = gymDays.find(d => d.routine_id === routine.id && d.day_index === i);
+    const content = dayData ? dayData.content : '';
+    const status = getGymLogValue(routine.id, i, currentGymWeek);
+
+    if (status === 1) doneCount++;
+
+    const isDone = status === 1;
+    const isMiss = status === 0;
+    const isNeutral = status === undefined;
+
+    const card = document.createElement('div');
+    card.className = `gym-day-card ${isDone ? 'status-done' : isMiss ? 'status-miss' : ''}`;
+
+    const safeContent = content.replace(/`/g, '\\`').replace(/'/g, "\\'");
+    
+    card.innerHTML = `
+      <div class="gym-day-header">
+        <div class="gym-day-title">Día ${i + 1}</div>
+      </div>
+      <div class="gym-day-content" onclick="openEditGymDayModal(${i}, '${safeContent.replace(/\n/g, '\\n')}')">${content}</div>
+      <div class="gym-day-actions">
+        <button class="gym-action-btn btn-done ${isDone ? 'active' : ''}" onclick="markGymDay(${i}, 1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Hecho
+        </button>
+        <button class="gym-action-btn btn-neutral ${isNeutral ? 'active' : ''}" onclick="markGymDay(${i}, -1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Sin dato
+        </button>
+        <button class="gym-action-btn btn-undone ${isMiss ? 'active' : ''}" onclick="markGymDay(${i}, 0)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          No hecho
+        </button>
+      </div>
+    `;
+    container.appendChild(card);
+  }
+
+  document.getElementById('gymWeekLabel').textContent = currentGymWeek;
+  document.getElementById('gymWeekScore').textContent = `${doneCount}/${routine.days_count}`;
+  const pct = Math.round((doneCount / routine.days_count) * 100) || 0;
+  document.getElementById('gymWeekPct').textContent = `${pct}% completado`;
+}
+
+function openAddGymRoutineModal() {
+  document.getElementById('gymRoutineName').value = '';
+  document.getElementById('gymRoutineDays').value = '3';
+  document.getElementById('submitGymRoutine').disabled = false;
+  document.getElementById('submitGymRoutine').textContent = 'Crear Rutina';
+  document.getElementById('addGymRoutineModal').classList.add('open');
+}
+
+function closeAddGymRoutineModal() {
+  document.getElementById('addGymRoutineModal').classList.remove('open');
+}
+
+async function submitNewGymRoutine() {
+  const name = document.getElementById('gymRoutineName').value.trim();
+  const days_count = parseInt(document.getElementById('gymRoutineDays').value);
+  if (!name || isNaN(days_count) || days_count < 1 || days_count > 7) {
+    showToast('Ingresa un nombre y de 1 a 7 días');
+    return;
+  }
+
+  const btn = document.getElementById('submitGymRoutine');
+  btn.disabled = true;
+  btn.textContent = 'Creando...';
+
+  try {
+    const result = await sb('gym_routines', { method: 'POST', body: { name, days_count } });
+    gymRoutines.push(result[0]);
+    selectedRoutineId = result[0].id;
+    closeAddGymRoutineModal();
+    renderGym();
+    showToast(`Rutina "${name}" creada`);
+  } catch (e) {
+    showToast('Error al crear rutina');
+    console.error(e);
+    btn.disabled = false;
+    btn.textContent = 'Crear Rutina';
+  }
+}
+
+function openEditGymDayModal(index, content) {
+  editDayIndex = index;
+  document.getElementById('editGymDayTitle').textContent = \`Editar Día \${index + 1}\`;
+  document.getElementById('gymDayContent').value = content;
+  document.getElementById('submitGymDay').disabled = false;
+  document.getElementById('submitGymDay').textContent = 'Guardar cambios';
+  document.getElementById('editGymDayModal').classList.add('open');
+}
+
+function closeEditGymDayModal() {
+  document.getElementById('editGymDayModal').classList.remove('open');
+  editDayIndex = null;
+}
+
+async function submitEditGymDay() {
+  const content = document.getElementById('gymDayContent').value.trim();
+  const btn = document.getElementById('submitGymDay');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  try {
+    // Check if gym_day exists
+    const existing = gymDays.find(d => d.routine_id === selectedRoutineId && d.day_index === editDayIndex);
+    if (existing) {
+      await sb(\`gym_days?id=eq.\${existing.id}\`, { method: 'PATCH', body: { content } });
+      existing.content = content;
+    } else {
+      const res = await sb('gym_days', { method: 'POST', body: { routine_id: selectedRoutineId, day_index: editDayIndex, content } });
+      gymDays.push(res[0]);
+    }
+    closeEditGymDayModal();
+    renderGym();
+    showToast('Día actualizado');
+  } catch(e) {
+    showToast('Error al guardar');
+    console.error(e);
+    btn.disabled = false;
+    btn.textContent = 'Guardar cambios';
+  }
+}
+
+async function markGymDay(dayIndex, val) {
+  if (!selectedRoutineId) return;
+
+  if (val === -1) {
+    gymLogs = gymLogs.filter(l => !(l.routine_id === selectedRoutineId && l.day_index === dayIndex && l.week_id === currentGymWeek));
+    renderGym();
+    showToast('Sin dato');
+    try {
+      await sb(\`gym_logs?routine_id=eq.\${selectedRoutineId}&day_index=eq.\${dayIndex}&week_id=eq.\${currentGymWeek}\`, { method: 'DELETE', prefer: 'return=minimal' });
+    } catch (e) {
+      console.error(e);
+    }
+    return;
+  }
+
+  const existing = gymLogs.find(l => l.routine_id === selectedRoutineId && l.day_index === dayIndex && l.week_id === currentGymWeek);
+  if (existing) existing.status = val;
+  else gymLogs.push({ routine_id: selectedRoutineId, day_index: dayIndex, week_id: currentGymWeek, status: val });
+
+  renderGym();
+  showToast(val === 1 ? '¡Día completado! ✓' : 'No hecho');
+
+  try {
+    await sb('gym_logs?on_conflict=routine_id,day_index,week_id', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=representation',
+      body: { routine_id: selectedRoutineId, day_index: dayIndex, week_id: currentGymWeek, status: val },
+    });
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+let gymChartInstance = null;
+function openGymCalendarModal() {
+  document.getElementById('gymCalendarModal').classList.add('open');
+  renderGymChart();
+}
+function closeGymCalendarModal() {
+  document.getElementById('gymCalendarModal').classList.remove('open');
+}
+
+function renderGymChart() {
+  if (!selectedRoutineId) return;
+  const routine = gymRoutines.find(r => r.id === selectedRoutineId);
+  if (!routine) return;
+
+  const logs = gymLogs.filter(l => l.routine_id === selectedRoutineId);
+  
+  // Group by week
+  const wm = {};
+  logs.forEach(l => {
+    if(!wm[l.week_id]) wm[l.week_id] = 0;
+    if(l.status === 1) wm[l.week_id]++;
+  });
+
+  // Get last 8 weeks based on current week
+  const today = new Date();
+  const weeks = [];
+  for(let i=7; i>=0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - (i * 7));
+    const wStr = getWeekString(d);
+    weeks.push({ label: wStr, done: wm[wStr] || 0 });
+  }
+
+  const labels = weeks.map(w => w.label);
+  const counts = weeks.map(w => w.done);
+  
+  const ctx = document.getElementById('gymChart').getContext('2d');
+  if (gymChartInstance) gymChartInstance.destroy();
+
+  const maxDays = routine.days_count;
+  const bgs = counts.map(c => c === maxDays ? 'rgba(34,197,94,0.12)' : c > 0 ? 'rgba(202,138,4,0.12)' : 'rgba(17,17,16,0.05)');
+  const bds = counts.map(c => c === maxDays ? 'rgba(34,197,94,0.7)' : c > 0 ? 'rgba(202,138,4,0.7)' : 'rgba(17,17,16,0.15)');
+
+  gymChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: counts,
+        backgroundColor: bgs,
+        borderColor: bds,
+        borderWidth: 1.5,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          min: 0,
+          max: maxDays,
+          ticks: { stepSize: 1, color: '#A39F97', font: { family: 'DM Mono', size: 10 } },
+          grid: { color: 'rgba(17,17,16,0.04)' }
+        },
+        x: {
+          ticks: { color: '#A39F97', font: { family: 'DM Mono', size: 9 }, maxRotation: 45 }
+        }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════
+
 syncData();

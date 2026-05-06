@@ -42,3 +42,51 @@ create policy "public logs" on logs
 -- ════════════════════════════════════════════════
 -- select * from habits;
 -- select * from logs;
+
+-- ════════════════════════════════════════════════
+--  Gym Tracker — Supabase Schema
+-- ════════════════════════════════════════════════
+
+-- 6. Tabla de rutinas (splits)
+create table if not exists gym_routines (
+  id          uuid default gen_random_uuid() primary key,
+  name        text not null,
+  days_count  smallint not null check (days_count >= 1 and days_count <= 7),
+  created_at  timestamptz default now()
+);
+
+-- 7. Tabla de los días de la rutina (textos/ejercicios)
+create table if not exists gym_days (
+  id          uuid default gen_random_uuid() primary key,
+  routine_id  uuid references gym_routines(id) on delete cascade not null,
+  day_index   smallint not null,
+  content     text default '',
+  created_at  timestamptz default now(),
+  unique (routine_id, day_index)
+);
+
+-- 8. Tabla de registros semanales por día de la rutina
+create table if not exists gym_logs (
+  id          uuid default gen_random_uuid() primary key,
+  routine_id  uuid references gym_routines(id) on delete cascade not null,
+  day_index   smallint not null,
+  week_id     text not null, -- e.g. "2026-W18" or the date of Monday
+  status      smallint default 0 check (status in (0, 1)),
+  created_at  timestamptz default now(),
+  unique (routine_id, day_index, week_id)
+);
+
+-- 9. Índices para consultas rápidas
+create index if not exists idx_gym_days_routine on gym_days(routine_id);
+create index if not exists idx_gym_logs_routine on gym_logs(routine_id);
+create index if not exists idx_gym_logs_week    on gym_logs(week_id);
+
+-- 10. Activar Row Level Security
+alter table gym_routines enable row level security;
+alter table gym_days     enable row level security;
+alter table gym_logs     enable row level security;
+
+-- 11. Policies — acceso público con anon key
+create policy "public gym_routines" on gym_routines for all using (true) with check (true);
+create policy "public gym_days"     on gym_days     for all using (true) with check (true);
+create policy "public gym_logs"     on gym_logs     for all using (true) with check (true);
