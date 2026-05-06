@@ -918,7 +918,7 @@ async function submitNewGymRoutine() {
 
 function openEditGymDayModal(index, content) {
   editDayIndex = index;
-  document.getElementById('editGymDayTitle').textContent = \`Editar Día \${index + 1}\`;
+  document.getElementById('editGymDayTitle').textContent = `Editar Día ${index + 1}`;
   document.getElementById('gymDayContent').value = content;
   document.getElementById('submitGymDay').disabled = false;
   document.getElementById('submitGymDay').textContent = 'Guardar cambios';
@@ -940,7 +940,7 @@ async function submitEditGymDay() {
     // Check if gym_day exists
     const existing = gymDays.find(d => d.routine_id === selectedRoutineId && d.day_index === editDayIndex);
     if (existing) {
-      await sb(\`gym_days?id=eq.\${existing.id}\`, { method: 'PATCH', body: { content } });
+      await sb(`gym_days?id=eq.${existing.id}`, { method: 'PATCH', body: { content } });
       existing.content = content;
     } else {
       const res = await sb('gym_days', { method: 'POST', body: { routine_id: selectedRoutineId, day_index: editDayIndex, content } });
@@ -965,7 +965,7 @@ async function markGymDay(dayIndex, val) {
     renderGym();
     showToast('Sin dato');
     try {
-      await sb(\`gym_logs?routine_id=eq.\${selectedRoutineId}&day_index=eq.\${dayIndex}&week_id=eq.\${currentGymWeek}\`, { method: 'DELETE', prefer: 'return=minimal' });
+      await sb(`gym_logs?routine_id=eq.${selectedRoutineId}&day_index=eq.${dayIndex}&week_id=eq.${currentGymWeek}`, { method: 'DELETE', prefer: 'return=minimal' });
     } catch (e) {
       console.error(e);
     }
