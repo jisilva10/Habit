@@ -398,13 +398,15 @@
 </div>
 
 <!-- ═══════════════ MODAL: CONFIRM DELETE EXERCISE ═══════════════ -->
-<div class="overlay" id="deleteExerciseModal" style="align-items: center;" onclick="bgClick(event,'deleteExerciseModal',cancelDeleteExercise)">
-  <div class="sheet" style="border-radius: var(--r-xl); padding-top: 30px; padding-bottom: 24px; text-align: center; width: 90%; max-width: 340px;">
-    <div style="font-size: 40px; margin-bottom: 12px; color: var(--stop);">🗑️</div>
-    <h2 class="sheet-title" style="margin-bottom: 8px;">¿Eliminar Ejercicio?</h2>
-    <p style="color: var(--ink-3); font-size: 14px; line-height: 1.5; margin-bottom: 24px; padding: 0 10px;">Esta acción no se puede deshacer.</p>
+<div class="overlay" id="deleteExerciseModal" style="align-items: center; justify-content: center;" onclick="bgClick(event,'deleteExerciseModal',cancelDeleteExercise)">
+  <div class="sheet" style="border-radius: var(--r-xl); padding: 32px 24px 24px; text-align: center; width: 90%; max-width: 320px; margin: 0; transform: none;">
+    <div style="margin-bottom: 20px; color: var(--stop); display: flex; justify-content: center;">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+    </div>
+    <h2 class="sheet-title" style="margin-bottom: 12px; font-size: 20px;">Eliminar Ejercicio</h2>
+    <p style="color: var(--ink-2); font-size: 15px; line-height: 1.4; margin-bottom: 28px;">¿Estás seguro? Esta acción no se puede deshacer.</p>
     
-    <div style="display: flex; gap: 10px; width: 100%;">
+    <div style="display: flex; gap: 12px; width: 100%;">
       <button class="ghost-btn" style="flex: 1;" onclick="cancelDeleteExercise()">Cancelar</button>
       <button class="primary-btn" style="flex: 1; background: var(--stop); border-color: var(--stop);" onclick="confirmDeleteExercise()">Eliminar</button>
     </div>
@@ -414,7 +416,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="js/app.js?v=8"></script>
+<script src="js/app.js?v=9"></script>
 <script>
   // FORZAR LIMPIEZA DE CACHÉ
   if ('serviceWorker' in navigator) {
