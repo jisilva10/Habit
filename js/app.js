@@ -1021,6 +1021,7 @@ function renderGymExercises() {
     
     card.addEventListener('touchstart', (e) => {
       startX = e.touches[0].clientX;
+      currentX = startX; // FIX: Initialize currentX to startX to prevent deletion on tap
       isSwiping = true;
       card.classList.add('swiping');
       card.classList.remove('animating');
