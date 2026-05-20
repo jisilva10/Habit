@@ -1194,7 +1194,7 @@ window.confirmDeleteExercise = async function() {
           gymExercisesData = gymExercisesData.filter(e => e.id !== ex.id);
         } catch (e) {
           console.error(e);
-          showToast('Error borrando en la nube');
+          showToast('Error borrando: ' + e.message);
         }
       }
       ex._deleted = true;
@@ -1293,7 +1293,7 @@ async function closeGymDetail() {
 
   } catch(e) {
     console.error(e);
-    showToast('Error al guardar cambios');
+    showToast('Error: ' + e.message);
   }
 
   editDayIndex = null;
