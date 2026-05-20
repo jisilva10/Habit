@@ -1183,13 +1183,18 @@ window.deleteExFromModal = function() {
 };
 
 // Modals confirm delete
-window.confirmDeleteExercise = function() {
+window.confirmDeleteExercise = async function() {
   if (exerciseIndexToDelete !== null) {
     const ex = currentExercises[exerciseIndexToDelete];
     if (ex) {
       if (ex.id && !ex.id.toString().startsWith('temp-')) {
-        if (!currentGymExercisesDeleted.includes(ex.id)) {
-          currentGymExercisesDeleted.push(ex.id);
+        // Delete directly from Supabase to prevent data loss if user exits without saving
+        try {
+          await sb(`gym_exercises?id=eq.${ex.id}`, { method: 'DELETE', prefer: 'return=minimal' });
+          gymExercisesData = gymExercisesData.filter(e => e.id !== ex.id);
+        } catch (e) {
+          console.error(e);
+          showToast('Error borrando en la nube');
         }
       }
       ex._deleted = true;
