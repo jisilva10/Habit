@@ -1047,9 +1047,12 @@ function renderGymExercises() {
       
       const diff = currentX - startX;
       if (diff < -80) {
-        // threshold reached, delete
-        card.style.transform = `translateX(-100%)`;
-        setTimeout(() => removeExercise(idx), 250);
+        if (confirm("¿Eliminar este ejercicio?")) {
+          card.style.transform = `translateX(-100%)`;
+          setTimeout(() => removeExercise(idx), 400);
+        } else {
+          card.style.transform = `translateX(0px)`;
+        }
       } else {
         card.style.transform = `translateX(0px)`;
       }
