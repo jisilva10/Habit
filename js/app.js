@@ -990,6 +990,9 @@ function openGymDetail(index, title, content) {
   gScreen.classList.add('slide-up-in');
 }
 
+let exerciseIndexToEdit = null;
+let exerciseIndexToDelete = null;
+
 window.renderGymExercises = function() {
   const container = document.getElementById('gymExercisesContainer');
   container.innerHTML = '';
