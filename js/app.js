@@ -1005,13 +1005,13 @@ window.renderGymExercises = function() {
     card.style.cursor = 'pointer';
     
     // Formatear 'sets'
-    let formattedSets = ex.sets ? ex.sets.replace(/\s*[xX*]\s*/g, ' x ') : '';
+    let formattedSets = ex.sets ? String(ex.sets).replace(/\s*[xX*]\s*/g, ' x ') : '';
     if (formattedSets === ' x ' || formattedSets === 'x') formattedSets = '';
     
-    const displayName = ex.name ? ex.name : '<span class="exercise-text-empty">Sin nombre</span>';
+    const displayName = ex.name ? String(ex.name) : '<span class="exercise-text-empty">Sin nombre</span>';
     const displaySets = formattedSets ? '<span class="exercise-text-info">' + formattedSets + '</span>' : '';
-    const displayWeight = ex.weight ? '<span class="exercise-text-info">' + ex.weight + '</span>' : '';
-    const displayLink = ex.link ? '<a href="' + ex.link + '" target="_blank" class="exercise-link-styled" onclick="event.stopPropagation()">LINK</a>' : '';
+    const displayWeight = ex.weight ? '<span class="exercise-text-info">' + String(ex.weight) + '</span>' : '';
+    const displayLink = ex.link ? '<a href="' + String(ex.link) + '" target="_blank" class="exercise-link-styled" onclick="event.stopPropagation()">LINK</a>' : '';
 
     card.innerHTML =
       '<div class="exercise-row">' +
@@ -1025,15 +1025,46 @@ window.renderGymExercises = function() {
         displayLink +
       '</div>';
     
-    // Simple tap to edit
+    // Simple tap to open action sheet
     var originalIdx = currentExercises.indexOf(ex);
     card.addEventListener('click', (function(oi) {
-      return function() { openEditExerciseModal(oi); };
+      return function() { openExerciseActionModal(oi); };
     })(originalIdx));
     
     container.appendChild(card);
   });
 };
+
+// --- Action Sheet Logic ---
+let exerciseActionTarget = null;
+
+window.openExerciseActionModal = function(idx) {
+  exerciseActionTarget = idx;
+  document.getElementById('exerciseActionModal').classList.add('active');
+};
+
+window.closeExerciseActionModal = function() {
+  document.getElementById('exerciseActionModal').classList.remove('active');
+  exerciseActionTarget = null;
+};
+
+window.actionEditExercise = function() {
+  if (exerciseActionTarget !== null) {
+    const target = exerciseActionTarget;
+    closeExerciseActionModal();
+    openEditExerciseModal(target);
+  }
+};
+
+window.actionDeleteExercise = function() {
+  if (exerciseActionTarget !== null) {
+    const target = exerciseActionTarget;
+    closeExerciseActionModal();
+    exerciseIndexToDelete = target;
+    document.getElementById('deleteExerciseModal').classList.add('active');
+  }
+};
+// -------------------------
 
 window.openEditExerciseModal = function(idx) {
   exerciseIndexToEdit = idx;
@@ -1045,7 +1076,7 @@ window.openEditExerciseModal = function(idx) {
   // Parse sets (e.g. "4 x 10")
   let sVal = '', rVal = '';
   if (ex.sets) {
-    const parts = ex.sets.split(/x/i).map(p => p.trim());
+    const parts = String(ex.sets).split(/x/i).map(p => p.trim());
     if (parts.length >= 2) {
       sVal = parts[0];
       rVal = parts[1];
@@ -1059,7 +1090,7 @@ window.openEditExerciseModal = function(idx) {
   // Parse weight (e.g. "60 kg")
   let wVal = '', wUnit = 'kg';
   if (ex.weight) {
-    const wParts = ex.weight.split(' ');
+    const wParts = String(ex.weight).split(' ');
     wVal = wParts[0] || '';
     if (wParts.length > 1) {
       wUnit = wParts[1].toLowerCase();
@@ -1070,7 +1101,8 @@ window.openEditExerciseModal = function(idx) {
   
   document.getElementById('exLinkInput').value = ex.link || '';
   
-  document.getElementById('deleteExFromModalBtn').style.display = 'inline-block';
+  // The delete button in the edit modal is hidden, as we now delete from the Action Sheet.
+  document.getElementById('deleteExFromModalBtn').style.display = 'none';
   document.getElementById('editExerciseModal').classList.add('active');
 };
 

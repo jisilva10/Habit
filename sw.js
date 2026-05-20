@@ -1,5 +1,5 @@
-const CACHE = 'habits-v2';
-const CORE  = ['./', '/index.html', '/css/style.css', '/js/app.js'];
+const CACHE = 'habits-v4';
+const CORE  = ['./', '/index.html', '/css/style.css', '/js/app.js?v=4'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));

@@ -397,6 +397,21 @@
   </div>
 </div>
 
+<!-- ═══════════════ MODAL: EXERCISE ACTION SHEET ═══════════════ -->
+<div class="overlay" id="exerciseActionModal" onclick="bgClick(event,'exerciseActionModal',closeExerciseActionModal)">
+  <div class="sheet" style="padding-bottom: 24px;">
+    <div class="sheet-handle"></div>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+      <button class="primary-btn" style="background: var(--surface); color: var(--ink); border: 1px solid var(--card-border);" onclick="actionEditExercise()">
+        ✏️ Editar Ejercicio
+      </button>
+      <button class="primary-btn" style="background: #FFF1F0; color: var(--stop); border: 1px solid #FFCCC7;" onclick="actionDeleteExercise()">
+        🗑️ Eliminar Ejercicio
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════ MODAL: CONFIRM DELETE EXERCISE ═══════════════ -->
 <div class="overlay" id="deleteExerciseModal" style="align-items: center;" onclick="bgClick(event,'deleteExerciseModal',cancelDeleteExercise)">
   <div class="sheet" style="border-radius: var(--r-xl); padding-top: 30px; padding-bottom: 24px; text-align: center; width: 90%; max-width: 340px;">
@@ -414,10 +429,17 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/app.js?v=6"></script>
 <script>
+  // FORZAR LIMPIEZA DE CACHÉ
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for(let registration of registrations) {
+        registration.unregister();
+      }
+    });
+    // Volver a registrar el nuevo (o puedes omitirlo si prefieres no usar SW temporalmente)
+    navigator.serviceWorker.register('/sw.js?v=6').catch(() => {});
   }
 </script>
 </body>
