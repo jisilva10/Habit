@@ -1225,21 +1225,6 @@ window.removeExercise = function(idx) {
   renderGymExercises();
 };
 
-window.addGymExercise = function() {
-  currentExercises.push({
-    id: 'temp-' + Date.now(),
-    name: '',
-    sets: '',
-    weight: '',
-    link: ''
-  });
-  renderGymExercises();
-  // Focus the newly added input
-  setTimeout(() => {
-    const inputs = document.querySelectorAll('.exercise-input');
-    if (inputs.length > 0) {
-      inputs[inputs.length - 1].focus();
-    }
   }, 50);
 };
 
