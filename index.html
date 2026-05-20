@@ -360,7 +360,10 @@
 <div class="overlay" id="editExerciseModal" onclick="bgClick(event,'editExerciseModal',closeEditExerciseModal)">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h2 class="sheet-title" id="editExerciseModalTitle">Editar Ejercicio</h2>
+    <div class="sheet-header-row">
+      <h2 class="sheet-title" style="margin-bottom:0;" id="editExerciseModalTitle">Editar Ejercicio</h2>
+      <button class="danger-text-btn" id="deleteExFromModalBtn" onclick="deleteExFromModal()">Eliminar</button>
+    </div>
     
     <label class="field-label" for="exNameInput">Nombre</label>
     <input class="field-input" id="exNameInput" type="text" placeholder="ej. Press Banca" autocomplete="off">
@@ -411,7 +414,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="js/app.js?v=2"></script>
+<script src="js/app.js?v=3"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
