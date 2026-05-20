@@ -372,15 +372,15 @@
       <div style="flex: 1;">
         <label class="field-label" for="exSeriesInput">Series x Reps</label>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <input class="field-input" id="exSeriesInput" type="number" placeholder="4" style="margin-bottom: 0; text-align: center;">
+          <input class="field-input" id="exSeriesInput" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="4" style="margin-bottom: 0; text-align: center;">
           <span style="color: var(--ink-2); font-weight: 600; font-family: var(--ff-mono);">x</span>
-          <input class="field-input" id="exRepsInput" type="number" placeholder="10" style="margin-bottom: 0; text-align: center;">
+          <input class="field-input" id="exRepsInput" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="10" style="margin-bottom: 0; text-align: center;">
         </div>
       </div>
       <div style="width: 140px;">
         <label class="field-label" for="exWeightInput">Peso</label>
         <div style="display: flex; gap: 4px;">
-          <input class="field-input" id="exWeightInput" type="number" placeholder="60" style="margin-bottom: 0; flex: 1;">
+          <input class="field-input" id="exWeightInput" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="60" style="margin-bottom: 0; flex: 1;">
           <select class="field-input" id="exWeightUnit" style="margin-bottom: 0; padding: 0 8px; width: 60px; font-weight: 600; background: var(--surface);">
             <option value="kg">kg</option>
             <option value="lb">lb</option>
@@ -394,21 +394,6 @@
     <input class="field-input" id="exLinkInput" type="url" placeholder="https://youtube.com/..." autocomplete="off">
     
     <button class="primary-btn" id="saveExerciseBtn" onclick="saveExerciseModal()">Guardar Ejercicio</button>
-  </div>
-</div>
-
-<!-- ═══════════════ MODAL: EXERCISE ACTION SHEET ═══════════════ -->
-<div class="overlay" id="exerciseActionModal" onclick="bgClick(event,'exerciseActionModal',closeExerciseActionModal)">
-  <div class="sheet" style="padding-bottom: 24px;">
-    <div class="sheet-handle"></div>
-    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-      <button class="primary-btn" style="background: var(--surface); color: var(--ink); border: 1px solid var(--card-border);" onclick="actionEditExercise()">
-        ✏️ Editar Ejercicio
-      </button>
-      <button class="primary-btn" style="background: #FFF1F0; color: var(--stop); border: 1px solid #FFCCC7;" onclick="actionDeleteExercise()">
-        🗑️ Eliminar Ejercicio
-      </button>
-    </div>
   </div>
 </div>
 
@@ -429,7 +414,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="js/app.js?v=7"></script>
+<script src="js/app.js?v=8"></script>
 <script>
   // FORZAR LIMPIEZA DE CACHÉ
   if ('serviceWorker' in navigator) {

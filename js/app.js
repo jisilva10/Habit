@@ -1024,47 +1024,62 @@ window.renderGymExercises = function() {
         ((displaySets || displayWeight) && displayLink ? ' \u2022 ' : '') +
         displayLink +
       '</div>';
+      
+    // Inline actions (hidden by default)
+    const inlineActions = document.createElement('div');
+    inlineActions.className = 'exercise-inline-actions';
+    inlineActions.style.display = 'none';
+    inlineActions.style.marginTop = '12px';
+    inlineActions.style.paddingTop = '12px';
+    inlineActions.style.borderTop = '1px solid var(--card-border)';
+    inlineActions.style.justifyContent = 'flex-end';
+    inlineActions.style.gap = '16px';
     
-    // Simple tap to open action sheet
-    var originalIdx = currentExercises.indexOf(ex);
-    card.addEventListener('click', (function(oi) {
-      return function() { openExerciseActionModal(oi); };
-    })(originalIdx));
+    // SVG Edit Pencil
+    const editBtn = document.createElement('div');
+    editBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>';
+    editBtn.style.cursor = 'pointer';
+    editBtn.style.color = 'var(--ink)';
+    
+    // SVG Trash
+    const deleteBtn = document.createElement('div');
+    deleteBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+    deleteBtn.style.cursor = 'pointer';
+    deleteBtn.style.color = 'var(--ink)';
+    
+    const originalIdx = currentExercises.indexOf(ex);
+    
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      inlineActions.style.display = 'none'; // hide when action taken
+      openEditExerciseModal(originalIdx);
+    });
+    
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      inlineActions.style.display = 'none'; // hide when action taken
+      exerciseIndexToDelete = originalIdx;
+      document.getElementById('deleteExerciseModal').classList.add('open');
+    });
+    
+    inlineActions.appendChild(editBtn);
+    inlineActions.appendChild(deleteBtn);
+    card.appendChild(inlineActions);
+    
+    // Toggle actions on card tap
+    card.addEventListener('click', () => {
+      if (inlineActions.style.display === 'none') {
+        inlineActions.style.display = 'flex';
+      } else {
+        inlineActions.style.display = 'none';
+      }
+    });
     
     container.appendChild(card);
   });
 };
 
-// --- Action Sheet Logic ---
-let exerciseActionTarget = null;
-
-window.openExerciseActionModal = function(idx) {
-  exerciseActionTarget = idx;
-  document.getElementById('exerciseActionModal').classList.add('open');
-};
-
-window.closeExerciseActionModal = function() {
-  document.getElementById('exerciseActionModal').classList.remove('open');
-  exerciseActionTarget = null;
-};
-
-window.actionEditExercise = function() {
-  if (exerciseActionTarget !== null) {
-    const target = exerciseActionTarget;
-    closeExerciseActionModal();
-    openEditExerciseModal(target);
-  }
-};
-
-window.actionDeleteExercise = function() {
-  if (exerciseActionTarget !== null) {
-    const target = exerciseActionTarget;
-    closeExerciseActionModal();
-    exerciseIndexToDelete = target;
-    document.getElementById('deleteExerciseModal').classList.add('open');
-  }
-};
-// -------------------------
+// (Removed Action Sheet logic)
 
 window.openEditExerciseModal = function(idx) {
   exerciseIndexToEdit = idx;
