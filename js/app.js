@@ -1248,6 +1248,8 @@ function toggleGymEditMode() {
 }
 
 async function closeGymDetail() {
+  if (editDayIndex === null) return; // Prevent double-tap crashes
+
   document.getElementById('gymDetail').classList.remove('active');
   document.getElementById('gym').classList.add('active');
   
