@@ -1040,11 +1040,11 @@ let exerciseActionTarget = null;
 
 window.openExerciseActionModal = function(idx) {
   exerciseActionTarget = idx;
-  document.getElementById('exerciseActionModal').classList.add('active');
+  document.getElementById('exerciseActionModal').classList.add('open');
 };
 
 window.closeExerciseActionModal = function() {
-  document.getElementById('exerciseActionModal').classList.remove('active');
+  document.getElementById('exerciseActionModal').classList.remove('open');
   exerciseActionTarget = null;
 };
 
@@ -1061,7 +1061,7 @@ window.actionDeleteExercise = function() {
     const target = exerciseActionTarget;
     closeExerciseActionModal();
     exerciseIndexToDelete = target;
-    document.getElementById('deleteExerciseModal').classList.add('active');
+    document.getElementById('deleteExerciseModal').classList.add('open');
   }
 };
 // -------------------------
@@ -1103,11 +1103,11 @@ window.openEditExerciseModal = function(idx) {
   
   // The delete button in the edit modal is hidden, as we now delete from the Action Sheet.
   document.getElementById('deleteExFromModalBtn').style.display = 'none';
-  document.getElementById('editExerciseModal').classList.add('active');
+  document.getElementById('editExerciseModal').classList.add('open');
 };
 
 window.closeEditExerciseModal = function() {
-  document.getElementById('editExerciseModal').classList.remove('active');
+  document.getElementById('editExerciseModal').classList.remove('open');
   exerciseIndexToEdit = null;
 };
 
@@ -1157,14 +1157,14 @@ window.addGymExercise = function() {
   document.getElementById('exWeightUnit').value = 'kg';
   document.getElementById('exLinkInput').value = '';
   document.getElementById('deleteExFromModalBtn').style.display = 'none';
-  document.getElementById('editExerciseModal').classList.add('active');
+  document.getElementById('editExerciseModal').classList.add('open');
 };
 
 // Delete exercise from within edit modal
 window.deleteExFromModal = function() {
   closeEditExerciseModal();
   exerciseIndexToDelete = exerciseIndexToEdit;
-  document.getElementById('deleteExerciseModal').classList.add('active');
+  document.getElementById('deleteExerciseModal').classList.add('open');
 };
 
 // Modals confirm delete
@@ -1186,7 +1186,7 @@ window.confirmDeleteExercise = function() {
 };
 
 window.cancelDeleteExercise = function() {
-  document.getElementById('deleteExerciseModal').classList.remove('active');
+  document.getElementById('deleteExerciseModal').classList.remove('open');
   exerciseIndexToDelete = null;
   renderGymExercises(); // Reset any dragged cards
 };
