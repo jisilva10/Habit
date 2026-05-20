@@ -251,10 +251,11 @@
   </div>
 
   <div class="detail-scroll">
-    <div class="section-block">
-      <div id="gymDetailContentReadonly" class="field-input readonly-content" style="min-height: 150px; white-space: pre-wrap; font-family: var(--ff); font-size: 18px; line-height: 1.6; color: var(--ink);"></div>
-      <textarea class="field-input hidden" id="gymDetailContent" rows="8" placeholder="ej. 4x10 Press Banca..." style="resize: none; height: auto; padding: 20px; font-family: var(--ff); font-size: 18px; line-height: 1.6; text-align: center; border: none; background: var(--surface); margin-bottom: 8px;"></textarea>
-      <button class="ghost-btn" id="gymEditContentBtn" onclick="toggleGymEditMode()" style="width: 100%; margin-top: 8px;">Editar Ejercicios</button>
+    <div class="section-block" style="padding-top: 0;">
+      <div id="gymExercisesContainer" class="exercises-container">
+        <!-- Tarjetas dinámicas aquí -->
+      </div>
+      <button class="ghost-btn" onclick="addGymExercise()" style="width: 100%; margin-top: 16px; border: 1px dashed var(--card-border); background: transparent; color: var(--ink-3);">+ Añadir Ejercicio</button>
     </div>
 
     <div class="action-area" style="padding-bottom: 52px;">

@@ -25,6 +25,9 @@ let wChart     = null;
 let gymRoutines = [];
 let gymDays     = [];
 let gymLogs     = [];
+let gymExercisesData = []; // new table data
+let currentExercises = []; // exercises for the active day being edited
+let currentGymExercisesDeleted = []; // tracking deleted exercises
 let selectedRoutineId = null;
 let currentGymWeek = getWeekString(new Date());
 let editDayIndex = null;
@@ -114,18 +117,20 @@ function loadFallback() {
 // ══════════════════════════════════════════════════════
 async function syncData() {
   try {
-    const [h, l, gr, gd, gl] = await Promise.all([
+    const [h, l, gr, gd, gl, ge] = await Promise.all([
       sb('habits?select=*&order=created_at'),
       sb('logs?select=*&order=fecha'),
       sb('gym_routines?select=*&order=created_at'),
       sb('gym_days?select=*&order=day_index'),
-      sb('gym_logs?select=*')
+      sb('gym_logs?select=*'),
+      sb('gym_exercises?select=*&order=order_index')
     ]);
     habits      = Array.isArray(h) ? h : [];
     allData     = Array.isArray(l) ? l : [];
     gymRoutines = Array.isArray(gr) ? gr : [];
     gymDays     = Array.isArray(gd) ? gd : [];
     gymLogs     = Array.isArray(gl) ? gl : [];
+    gymExercisesData = Array.isArray(ge) ? ge : [];
     
     if (gymRoutines.length > 0 && !selectedRoutineId) {
       selectedRoutineId = gymRoutines[0].id;
@@ -944,29 +949,151 @@ function openGymDetail(index, title, content) {
   editDayIndex = index;
   document.getElementById('gymDetailTitle').value = title === 'Sin título' ? '' : title;
   
-  document.getElementById('gymDetailContent').value = content;
-  document.getElementById('gymDetailContentReadonly').textContent = content;
+  const existingDay = gymDays.find(d => d.routine_id === selectedRoutineId && d.day_index === index);
+  if (existingDay) {
+    currentExercises = gymExercisesData.filter(e => e.day_id === existingDay.id).map(e => ({...e}));
+  } else {
+    currentExercises = [];
+  }
+  currentGymExercisesDeleted = [];
   
-  // Reset to readonly mode
-  document.getElementById('gymDetailContent').classList.add('hidden');
-  document.getElementById('gymDetailContentReadonly').classList.remove('hidden');
-  document.getElementById('gymEditContentBtn').classList.remove('hidden');
+  // Backwards compatibility: if there are no exercises but there is content, migrate it
+  if (currentExercises.length === 0 && content && content.trim() !== '') {
+    currentExercises.push({
+      id: 'temp-' + Date.now(),
+      name: content,
+      sets: '',
+      weight: '',
+      link: ''
+    });
+  }
+
+  renderGymExercises();
   
   // Render active states of buttons
   const status = getGymLogValue(selectedRoutineId, index, currentGymWeek);
-  document.getElementById('gymBtnDone').classList.toggle('active', status === 1);
-  document.getElementById('gymBtnNeutral').classList.toggle('active', status === undefined);
-  document.getElementById('gymBtnUndone').classList.toggle('active', status === 0);
+  document.getElementById('gymBtnDone').classList.toggle('active-state', status === 1);
+  document.getElementById('gymBtnNeutral').classList.toggle('active-state', status === undefined);
+  document.getElementById('gymBtnUndone').classList.toggle('active-state', status === 0);
 
   document.getElementById('gym').classList.remove('active');
   document.getElementById('gymDetail').classList.add('active');
 }
 
+function renderGymExercises() {
+  const container = document.getElementById('gymExercisesContainer');
+  container.innerHTML = '';
+  
+  currentExercises.forEach((ex, idx) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'exercise-card-wrap';
+    
+    // Swipe delete background
+    const delBg = document.createElement('div');
+    delBg.className = 'exercise-delete-bg';
+    delBg.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+    wrap.appendChild(delBg);
+    
+    const card = document.createElement('div');
+    card.className = 'exercise-card';
+    card.dataset.index = idx;
+    
+    card.innerHTML = `
+      <div class="exercise-row">
+        <input type="text" class="exercise-input" placeholder="nombre" value="${ex.name.replace(/"/g, '&quot;')}" oninput="updateExercise(${idx}, 'name', this.value)">
+        <div style="display:flex; gap:6px;">
+          <input type="text" class="exercise-sets-input" placeholder="ej. 4x10" value="${ex.sets.replace(/"/g, '&quot;')}" oninput="updateExercise(${idx}, 'sets', this.value)">
+          <input type="text" class="exercise-sets-input weight-input" placeholder="kg" value="${(ex.weight || '').replace(/"/g, '&quot;')}" oninput="updateExercise(${idx}, 'weight', this.value)">
+        </div>
+      </div>
+      <div class="exercise-row" style="margin-top: 4px;">
+        <div class="exercise-link-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        </div>
+        <input type="url" class="exercise-link-input" placeholder="link (opcional)" value="${ex.link.replace(/"/g, '&quot;')}" oninput="updateExercise(${idx}, 'link', this.value)">
+      </div>
+    `;
+    
+    // Touch events for swipe to delete (swipe left)
+    let startX = 0;
+    let currentX = 0;
+    let isSwiping = false;
+    
+    card.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      isSwiping = true;
+      card.classList.add('swiping');
+      card.classList.remove('animating');
+    }, {passive: true});
+    
+    card.addEventListener('touchmove', (e) => {
+      if (!isSwiping) return;
+      currentX = e.touches[0].clientX;
+      const diff = currentX - startX;
+      // Only allow swipe left (diff < 0)
+      if (diff < 0) {
+        card.style.transform = `translateX(${diff}px)`;
+      } else {
+        card.style.transform = `translateX(0px)`;
+      }
+    }, {passive: true});
+    
+    card.addEventListener('touchend', (e) => {
+      if (!isSwiping) return;
+      isSwiping = false;
+      card.classList.remove('swiping');
+      card.classList.add('animating');
+      
+      const diff = currentX - startX;
+      if (diff < -80) {
+        // threshold reached, delete
+        card.style.transform = `translateX(-100%)`;
+        setTimeout(() => removeExercise(idx), 250);
+      } else {
+        card.style.transform = `translateX(0px)`;
+      }
+    });
+    
+    wrap.appendChild(card);
+    container.appendChild(wrap);
+  });
+}
+
+window.updateExercise = function(idx, field, value) {
+  if (currentExercises[idx]) {
+    currentExercises[idx][field] = value;
+  }
+};
+
+window.removeExercise = function(idx) {
+  const ex = currentExercises[idx];
+  if (ex.id && !ex.id.toString().startsWith('temp-')) {
+    currentGymExercisesDeleted.push(ex.id);
+  }
+  currentExercises.splice(idx, 1);
+  renderGymExercises();
+};
+
+window.addGymExercise = function() {
+  currentExercises.push({
+    id: 'temp-' + Date.now(),
+    name: '',
+    sets: '',
+    weight: '',
+    link: ''
+  });
+  renderGymExercises();
+  // Focus the newly added input
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.exercise-input');
+    if (inputs.length > 0) {
+      inputs[inputs.length - 1].focus();
+    }
+  }, 50);
+};
+
 function toggleGymEditMode() {
-  document.getElementById('gymDetailContentReadonly').classList.add('hidden');
-  document.getElementById('gymEditContentBtn').classList.add('hidden');
-  document.getElementById('gymDetailContent').classList.remove('hidden');
-  document.getElementById('gymDetailContent').focus();
+  // Not needed anymore, replaced by the new exercise UI
 }
 
 async function closeGymDetail() {
@@ -975,32 +1102,63 @@ async function closeGymDetail() {
   
   // Auto-save on back
   const titleVal = document.getElementById('gymDetailTitle').value.trim();
-  const contentVal = document.getElementById('gymDetailContent').value.trim();
+  let dayToSave = gymDays.find(d => d.routine_id === selectedRoutineId && d.day_index === editDayIndex);
   
-  const existing = gymDays.find(d => d.routine_id === selectedRoutineId && d.day_index === editDayIndex);
-  
-  // Check if anything changed
-  const oldTitle = existing && existing.title ? existing.title : '';
-  const oldContent = existing && existing.content ? existing.content : '';
-  
-  if (oldTitle !== titleVal || oldContent !== contentVal) {
+  try {
     showToast('Guardando...');
-    try {
-      if (existing) {
-        await sb(`gym_days?id=eq.${existing.id}`, { method: 'PATCH', body: { title: titleVal, content: contentVal } });
-        existing.title = titleVal;
-        existing.content = contentVal;
-      } else {
-        const res = await sb('gym_days', { method: 'POST', body: { routine_id: selectedRoutineId, day_index: editDayIndex, title: titleVal, content: contentVal } });
-        gymDays.push(res[0]);
+    // 1. Create or Update Day
+    if (dayToSave) {
+      if (dayToSave.title !== titleVal) {
+        await sb(`gym_days?id=eq.${dayToSave.id}`, { method: 'PATCH', body: { title: titleVal } });
+        dayToSave.title = titleVal;
       }
-    } catch(e) {
-      console.error(e);
-      showToast('Error al guardar cambios');
+    } else {
+      const res = await sb('gym_days', { method: 'POST', body: { routine_id: selectedRoutineId, day_index: editDayIndex, title: titleVal, content: '' } });
+      gymDays.push(res[0]);
+      dayToSave = res[0];
     }
+    
+    // 2. Save Exercises
+    const dayId = dayToSave.id;
+    
+    // Delete removed
+    if (currentGymExercisesDeleted.length > 0) {
+      await sb(`gym_exercises?id=in.(${currentGymExercisesDeleted.join(',')})`, { method: 'DELETE', prefer: 'return=minimal' });
+      gymExercisesData = gymExercisesData.filter(e => !currentGymExercisesDeleted.includes(e.id));
+    }
+    
+    // Upsert current
+    for (let i = 0; i < currentExercises.length; i++) {
+      const ex = currentExercises[i];
+      if (ex.id && ex.id.toString().startsWith('temp-')) {
+        // Insert new
+        const { id, ...exData } = ex; // remove temp id
+        const res = await sb('gym_exercises', { 
+          method: 'POST', 
+          body: { day_id: dayId, name: ex.name, sets: ex.sets, weight: ex.weight || '', link: ex.link, order_index: i } 
+        });
+        gymExercisesData.push(res[0]);
+      } else {
+        // Update existing
+        await sb(`gym_exercises?id=eq.${ex.id}`, { 
+          method: 'PATCH', 
+          body: { name: ex.name, sets: ex.sets, weight: ex.weight || '', link: ex.link, order_index: i } 
+        });
+        const localEx = gymExercisesData.find(e => e.id === ex.id);
+        if (localEx) {
+          localEx.name = ex.name; localEx.sets = ex.sets; localEx.weight = ex.weight || ''; localEx.link = ex.link; localEx.order_index = i;
+        }
+      }
+    }
+
+  } catch(e) {
+    console.error(e);
+    showToast('Error al guardar cambios');
   }
 
   editDayIndex = null;
+  currentExercises = [];
+  currentGymExercisesDeleted = [];
   renderGym();
 }
 
@@ -1009,9 +1167,9 @@ async function markGymDay(val) {
   const dayIndex = editDayIndex;
 
   // Update UI buttons optimistically
-  document.getElementById('gymBtnDone').classList.toggle('active', val === 1);
-  document.getElementById('gymBtnNeutral').classList.toggle('active', val === -1 || val === undefined);
-  document.getElementById('gymBtnUndone').classList.toggle('active', val === 0);
+  document.getElementById('gymBtnDone').classList.toggle('active-state', val === 1);
+  document.getElementById('gymBtnNeutral').classList.toggle('active-state', val === -1 || val === undefined);
+  document.getElementById('gymBtnUndone').classList.toggle('active-state', val === 0);
 
   if (val === -1) {
     gymLogs = gymLogs.filter(l => !(l.routine_id === selectedRoutineId && l.day_index === dayIndex && l.week_id === currentGymWeek));

@@ -1208,3 +1208,126 @@ body {
   min-height: 60vh;
 }
 
+
+/* ════════════════════════════════════════════════════
+   GYM EXERCISES (PRO MINIMALIST REDESIGN)
+   ════════════════════════════════════════════════════ */
+.exercises-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+
+.exercise-card-wrap {
+  position: relative;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--stop);
+}
+
+.exercise-delete-bg {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 20px;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.exercise-delete-bg svg {
+  width: 20px; height: 20px;
+}
+
+.exercise-card {
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  border: 1px solid var(--card-border);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1;
+  transition: transform 0s;
+}
+.exercise-card.swiping {
+  transition: none;
+}
+.exercise-card.animating {
+  transition: transform 0.25s var(--ease);
+}
+
+.exercise-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exercise-input {
+  background: transparent;
+  border: none;
+  font-family: var(--ff);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  padding: 0;
+}
+.exercise-input::placeholder {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.exercise-sets-input {
+  background: var(--raised);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  font-family: var(--ff-mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  outline: none;
+  width: 80px;
+  padding: 6px 10px;
+  text-align: center;
+  transition: border-color .2s;
+}
+.exercise-sets-input:focus {
+  border-color: var(--card-border);
+  background: var(--surface);
+}
+.exercise-sets-input::placeholder {
+  color: var(--ink-3);
+}
+
+.exercise-link-input {
+  background: transparent;
+  border: none;
+  font-family: var(--ff);
+  font-size: 13px;
+  color: var(--ink-2);
+  outline: none;
+  width: 100%;
+  padding: 0;
+}
+.exercise-link-input::placeholder {
+  color: var(--ink-3);
+}
+
+.exercise-link-icon {
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+.exercise-link-icon svg {
+  width: 16px; height: 16px;
+}
+
+.weight-input {
+  width: 60px;
+}

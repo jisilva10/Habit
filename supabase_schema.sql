@@ -91,3 +91,22 @@ alter table gym_logs     enable row level security;
 create policy "public gym_routines" on gym_routines for all using (true) with check (true);
 create policy "public gym_days"     on gym_days     for all using (true) with check (true);
 create policy "public gym_logs"     on gym_logs     for all using (true) with check (true);
+
+-- 12. Tabla de ejercicios por día
+create table if not exists gym_exercises (
+  id          uuid default gen_random_uuid() primary key,
+  day_id      uuid references gym_days(id) on delete cascade not null,
+  name        text not null default '',
+  sets        text not null default '',
+  weight      text not null default '',
+  link        text not null default '',
+  order_index smallint not null default 0,
+  created_at  timestamptz default now()
+);
+
+-- 13. Índices para ejercicios
+create index if not exists idx_gym_exercises_day on gym_exercises(day_id);
+
+-- 14. Activar Row Level Security en ejercicios
+alter table gym_exercises enable row level security;
+create policy "public gym_exercises" on gym_exercises for all using (true) with check (true);
