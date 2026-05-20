@@ -1000,13 +1000,13 @@ window.renderGymExercises = function() {
     cardWrap.className = 'exercise-card-wrap animate-entry';
     cardWrap.style.animationDelay = `${idx * 0.05}s`;
     
-    const deleteBg = document.createElement('div');
-    deleteBg.className = 'exercise-delete-bg';
-    deleteBg.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-    
     const editBg = document.createElement('div');
     editBg.className = 'exercise-edit-bg';
     editBg.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
+    
+    const deleteBg = document.createElement('div');
+    deleteBg.className = 'exercise-delete-bg';
+    deleteBg.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
     
     const card = document.createElement('div');
     card.className = 'exercise-card animating';
@@ -1063,24 +1063,24 @@ window.renderGymExercises = function() {
       
       const diff = currentX - startX;
       if (diff < -80) {
-        // threshold reached, confirm delete
-        card.style.transform = `translateX(-100%)`;
-        exerciseIndexToDelete = originalIdx;
-        document.getElementById('deleteExerciseModal').classList.add('active');
-      } else if (diff > 80) {
         // threshold reached, open edit
-        card.style.transform = `translateX(100%)`;
+        card.style.transform = `translateX(-100%)`;
         setTimeout(() => {
           card.style.transform = `translateX(0px)`;
           openEditExerciseModal(originalIdx);
         }, 300);
+      } else if (diff > 80) {
+        // threshold reached, confirm delete
+        card.style.transform = `translateX(100%)`;
+        exerciseIndexToDelete = originalIdx;
+        document.getElementById('deleteExerciseModal').classList.add('active');
       } else {
         card.style.transform = `translateX(0px)`;
       }
     });
 
-    cardWrap.appendChild(deleteBg);
     cardWrap.appendChild(editBg);
+    cardWrap.appendChild(deleteBg);
     cardWrap.appendChild(card);
     container.appendChild(cardWrap);
   });
