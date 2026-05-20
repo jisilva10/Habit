@@ -77,6 +77,7 @@ input, textarea {
 
 html {
   height: 100%;
+  overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -84,8 +85,8 @@ body {
   font-family: var(--ff);
   background: var(--bg);
   color: var(--ink);
-  min-height: 100%;
-  overflow-x: hidden;
+  height: 100%;
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
@@ -95,14 +96,14 @@ body {
 /* ════════════════════════════════════════════════════
    SCREENS
    ════════════════════════════════════════════════════ */
-.screen { display: none; min-height: 100svh; flex-direction: column; }
+.screen { display: none; height: 100%; max-height: 100%; flex-direction: column; overflow: hidden; }
 .screen.active { display: flex; }
 
 
 /* ════════════════════════════════════════════════════
    HOME — HEADER
    ════════════════════════════════════════════════════ */
-#home { padding-bottom: 40px; }
+#home { padding-bottom: 0; }
 
 .home-header {
   padding: 60px 20px 20px;
@@ -225,7 +226,10 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  padding: 6px 20px 0;
+  padding: 6px 20px 100px;
+  flex: 1;
+  overflow-y: auto;
+  align-content: start;
 }
 
 /* Card */
@@ -1330,4 +1334,115 @@ body {
 
 .weight-input {
   width: 60px;
+}
+
+/* ════════════════════════════════════════════════════
+   EXERCISE CARDS READ-ONLY & SWIPE
+   ════════════════════════════════════════════════════ */
+
+/* Edit Background (Swipe Right) */
+.exercise-edit-bg {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 20px;
+  background: var(--ink); /* Dark elegant for Edit */
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+}
+.exercise-edit-bg svg {
+  width: 18px; height: 18px;
+}
+
+/* Read-Only text elements replacing inputs */
+.exercise-text-name {
+  font-family: var(--ff);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.exercise-text-sets, .exercise-text-weight {
+  background: var(--raised);
+  border-radius: var(--r-sm);
+  font-family: var(--ff-mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  padding: 6px 10px;
+  text-align: center;
+  min-width: 60px;
+  display: inline-block;
+}
+.exercise-text-link {
+  font-family: var(--ff);
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.exercise-text-empty {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+/* Animations */
+@keyframes slideUpFade {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-entry {
+  animation: slideUpFade 0.5s var(--ease) backwards;
+}
+
+.exercise-text-info {
+  font-family: var(--ff-mono);
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.exercise-link-styled {
+  color: var(--ink);
+  text-decoration: underline;
+  font-weight: 600;
+  cursor: pointer;
+}
+.exercise-link-styled:hover {
+  color: var(--ink-2);
+}
+
+/* Screen Transition Animation */
+@keyframes slideUpIn {
+  0% { transform: translateY(30px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.slide-up-in {
+  animation: slideUpIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Card active state */
+.habit-card:active, .exercise-card:active, .gym-routine-tab:active {
+  transform: scale(0.95) !important;
+  transition: transform 0.1s var(--ease) !important;
+}
+
+/* Native select styling for the unit roulette */
+select.field-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  background-size: 14px;
 }

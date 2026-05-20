@@ -356,6 +356,58 @@
   </button>
 </nav>
 
+<!-- ═══════════════ MODAL: EDIT EXERCISE (BOTTOM SHEET) ═══════════════ -->
+<div class="overlay" id="editExerciseModal" onclick="bgClick(event,'editExerciseModal',closeEditExerciseModal)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 class="sheet-title" id="editExerciseModalTitle">Editar Ejercicio</h2>
+    
+    <label class="field-label" for="exNameInput">Nombre</label>
+    <input class="field-input" id="exNameInput" type="text" placeholder="ej. Press Banca" autocomplete="off">
+    
+    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+      <div style="flex: 1;">
+        <label class="field-label" for="exSeriesInput">Series x Reps</label>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input class="field-input" id="exSeriesInput" type="number" placeholder="4" style="margin-bottom: 0; text-align: center;">
+          <span style="color: var(--ink-2); font-weight: 600; font-family: var(--ff-mono);">x</span>
+          <input class="field-input" id="exRepsInput" type="number" placeholder="10" style="margin-bottom: 0; text-align: center;">
+        </div>
+      </div>
+      <div style="width: 140px;">
+        <label class="field-label" for="exWeightInput">Peso</label>
+        <div style="display: flex; gap: 4px;">
+          <input class="field-input" id="exWeightInput" type="number" placeholder="60" style="margin-bottom: 0; flex: 1;">
+          <select class="field-input" id="exWeightUnit" style="margin-bottom: 0; padding: 0 8px; width: 60px; font-weight: 600; background: var(--surface);">
+            <option value="kg">kg</option>
+            <option value="lb">lb</option>
+            <option value="km">km</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    <label class="field-label" for="exLinkInput">Video / Link (opcional)</label>
+    <input class="field-input" id="exLinkInput" type="url" placeholder="https://youtube.com/..." autocomplete="off">
+    
+    <button class="primary-btn" id="saveExerciseBtn" onclick="saveExerciseModal()">Guardar Ejercicio</button>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: CONFIRM DELETE EXERCISE ═══════════════ -->
+<div class="overlay" id="deleteExerciseModal" style="align-items: center;" onclick="bgClick(event,'deleteExerciseModal',cancelDeleteExercise)">
+  <div class="sheet" style="border-radius: var(--r-xl); padding-top: 30px; padding-bottom: 24px; text-align: center; width: 90%; max-width: 340px;">
+    <div style="font-size: 40px; margin-bottom: 12px; color: var(--stop);">🗑️</div>
+    <h2 class="sheet-title" style="margin-bottom: 8px;">¿Eliminar Ejercicio?</h2>
+    <p style="color: var(--ink-3); font-size: 14px; line-height: 1.5; margin-bottom: 24px; padding: 0 10px;">Esta acción no se puede deshacer.</p>
+    
+    <div style="display: flex; gap: 10px; width: 100%;">
+      <button class="ghost-btn" style="flex: 1;" onclick="cancelDeleteExercise()">Cancelar</button>
+      <button class="primary-btn" style="flex: 1; background: var(--stop); border-color: var(--stop);" onclick="confirmDeleteExercise()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>

@@ -256,13 +256,14 @@ function renderHome() {
     return;
   }
 
-  habits.forEach(h => {
+  habits.forEach((h, idx) => {
     const s          = stats(h.id);
     const tv         = getLogValue(h.id, today);
     const statusClass= tv === 1 ? 'status-done' : tv === 0 ? 'status-miss' : '';
 
     const card = document.createElement('div');
-    card.className = `habit-card ${statusClass}`;
+    card.className = `habit-card ${statusClass} animate-entry`;
+    card.style.animationDelay = `${idx * 0.05}s`;
     card.innerHTML = `
       <div class="card-strip"></div>
       <div class="card-top">
@@ -298,7 +299,11 @@ function openDetail(habitId) {
   document.getElementById('detailEmoji').textContent = h.emoji;
   document.getElementById('detailTitle').textContent = h.name;
   document.getElementById('home').classList.remove('active');
-  document.getElementById('detail').classList.add('active');
+  const dScreen = document.getElementById('detail');
+  dScreen.classList.add('active');
+  dScreen.classList.remove('slide-up-in');
+  void dScreen.offsetWidth; // trigger reflow
+  dScreen.classList.add('slide-up-in');
   renderDetail();
 }
 
@@ -858,7 +863,8 @@ function renderGym() {
     const isMiss = status === 0;
 
     const card = document.createElement('div');
-    card.className = `habit-card ${isDone ? 'status-done' : isMiss ? 'status-miss' : ''}`;
+    card.className = `habit-card animate-entry ${isDone ? 'status-done' : isMiss ? 'status-miss' : ''}`;
+    card.style.animationDelay = `${i * 0.05}s`;
 
     const safeTitle = title.replace(/'/g, "\\'");
     const safeContent = content.replace(/`/g, '\\`').replace(/'/g, "\\'");
@@ -977,51 +983,66 @@ function openGymDetail(index, title, content) {
   document.getElementById('gymBtnUndone').classList.toggle('active-state', status === 0);
 
   document.getElementById('gym').classList.remove('active');
-  document.getElementById('gymDetail').classList.add('active');
+  const gScreen = document.getElementById('gymDetail');
+  gScreen.classList.add('active');
+  gScreen.classList.remove('slide-up-in');
+  void gScreen.offsetWidth; // trigger reflow
+  gScreen.classList.add('slide-up-in');
 }
 
-function renderGymExercises() {
+window.renderGymExercises = function() {
   const container = document.getElementById('gymExercisesContainer');
   container.innerHTML = '';
   
-  currentExercises.forEach((ex, idx) => {
-    const wrap = document.createElement('div');
-    wrap.className = 'exercise-card-wrap';
+  const activeExercises = currentExercises.filter(ex => !ex._deleted);
+  activeExercises.forEach((ex, idx) => {
+    const cardWrap = document.createElement('div');
+    cardWrap.className = 'exercise-card-wrap animate-entry';
+    cardWrap.style.animationDelay = `${idx * 0.05}s`;
     
-    // Swipe delete background
-    const delBg = document.createElement('div');
-    delBg.className = 'exercise-delete-bg';
-    delBg.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
-    wrap.appendChild(delBg);
+    const deleteBg = document.createElement('div');
+    deleteBg.className = 'exercise-delete-bg';
+    deleteBg.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+    
+    const editBg = document.createElement('div');
+    editBg.className = 'exercise-edit-bg';
+    editBg.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
     
     const card = document.createElement('div');
-    card.className = 'exercise-card';
-    card.dataset.index = idx;
+    card.className = 'exercise-card animating';
     
+    // Formatear 'sets' (ej. 4 x 10 -> 4 x 10)
+    let formattedSets = ex.sets ? ex.sets.replace(/\s*[xX*]\s*/g, ' x ') : '';
+    // Limpiar ' x ' si se dejaron campos vacíos pero se puso la x
+    if (formattedSets === ' x ' || formattedSets === 'x') formattedSets = '';
+    
+    const displayName = ex.name ? ex.name : `<span class="exercise-text-empty">Sin nombre</span>`;
+    const displaySets = formattedSets ? `<span class="exercise-text-info">${formattedSets}</span>` : '';
+    const displayWeight = ex.weight ? `<span class="exercise-text-info">${ex.weight}</span>` : '';
+    const displayLink = ex.link ? `<a href="${ex.link}" target="_blank" class="exercise-link-styled">LINK</a>` : '';
+
     card.innerHTML = `
       <div class="exercise-row">
-        <input type="text" class="exercise-input" placeholder="nombre" value="${ex.name.replace(/"/g, '&quot;')}" oninput="updateExercise(${idx}, 'name', this.value)">
-        <div style="display:flex; gap:6px;">
-          <input type="text" class="exercise-sets-input" placeholder="ej. 4x10" value="${ex.sets.replace(/"/g, '&quot;')}" oninput="updateExercise(${idx}, 'sets', this.value)">
-          <input type="text" class="exercise-sets-input weight-input" placeholder="kg" value="${(ex.weight || '').replace(/"/g, '&quot;')}" oninput="updateExercise(${idx}, 'weight', this.value)">
-        </div>
+        <div class="exercise-text-name">${displayName}</div>
       </div>
-      <div class="exercise-row" style="margin-top: 4px;">
-        <div class="exercise-link-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-        </div>
-        <input type="url" class="exercise-link-input" placeholder="link (opcional)" value="${ex.link.replace(/"/g, '&quot;')}" oninput="updateExercise(${idx}, 'link', this.value)">
+      <div class="exercise-row" style="margin-top: 8px; justify-content: flex-start; gap: 12px; color: var(--ink-2); font-size: 14px;">
+        ${displaySets}
+        ${displaySets && displayWeight ? '•' : ''}
+        ${displayWeight}
+        ${(displaySets || displayWeight) && displayLink ? '•' : ''}
+        ${displayLink}
       </div>
     `;
     
-    // Touch events for swipe to delete (swipe left)
+    // Touch events for swipe right to edit, swipe left to delete
     let startX = 0;
     let currentX = 0;
     let isSwiping = false;
+    let originalIdx = currentExercises.indexOf(ex);
     
     card.addEventListener('touchstart', (e) => {
       startX = e.touches[0].clientX;
-      currentX = startX; // FIX: Initialize currentX to startX to prevent deletion on tap
+      currentX = startX; 
       isSwiping = true;
       card.classList.add('swiping');
       card.classList.remove('animating');
@@ -1031,12 +1052,7 @@ function renderGymExercises() {
       if (!isSwiping) return;
       currentX = e.touches[0].clientX;
       const diff = currentX - startX;
-      // Only allow swipe left (diff < 0)
-      if (diff < 0) {
-        card.style.transform = `translateX(${diff}px)`;
-      } else {
-        card.style.transform = `translateX(0px)`;
-      }
+      card.style.transform = `translateX(${diff}px)`;
     }, {passive: true});
     
     card.addEventListener('touchend', (e) => {
@@ -1047,21 +1063,143 @@ function renderGymExercises() {
       
       const diff = currentX - startX;
       if (diff < -80) {
-        if (confirm("¿Eliminar este ejercicio?")) {
-          card.style.transform = `translateX(-100%)`;
-          setTimeout(() => removeExercise(idx), 400);
-        } else {
+        // threshold reached, confirm delete
+        card.style.transform = `translateX(-100%)`;
+        exerciseIndexToDelete = originalIdx;
+        document.getElementById('deleteExerciseModal').classList.add('active');
+      } else if (diff > 80) {
+        // threshold reached, open edit
+        card.style.transform = `translateX(100%)`;
+        setTimeout(() => {
           card.style.transform = `translateX(0px)`;
-        }
+          openEditExerciseModal(originalIdx);
+        }, 300);
       } else {
         card.style.transform = `translateX(0px)`;
       }
     });
-    
-    wrap.appendChild(card);
-    container.appendChild(wrap);
+
+    cardWrap.appendChild(deleteBg);
+    cardWrap.appendChild(editBg);
+    cardWrap.appendChild(card);
+    container.appendChild(cardWrap);
   });
-}
+};
+
+window.openEditExerciseModal = function(idx) {
+  exerciseIndexToEdit = idx;
+  const ex = currentExercises[idx];
+  
+  document.getElementById('editExerciseModalTitle').textContent = "Editar Ejercicio";
+  document.getElementById('exNameInput').value = ex.name || '';
+  
+  // Parse sets (e.g. "4 x 10")
+  let sVal = '', rVal = '';
+  if (ex.sets) {
+    const parts = ex.sets.split(/x/i).map(p => p.trim());
+    if (parts.length >= 2) {
+      sVal = parts[0];
+      rVal = parts[1];
+    } else {
+      sVal = parts[0] || '';
+    }
+  }
+  document.getElementById('exSeriesInput').value = sVal;
+  document.getElementById('exRepsInput').value = rVal;
+  
+  // Parse weight (e.g. "60 kg")
+  let wVal = '', wUnit = 'kg';
+  if (ex.weight) {
+    const wParts = ex.weight.split(' ');
+    wVal = wParts[0] || '';
+    if (wParts.length > 1) {
+      wUnit = wParts[1].toLowerCase();
+    }
+  }
+  document.getElementById('exWeightInput').value = wVal;
+  document.getElementById('exWeightUnit').value = ['kg','lb','km'].includes(wUnit) ? wUnit : 'kg';
+  
+  document.getElementById('exLinkInput').value = ex.link || '';
+  
+  document.getElementById('editExerciseModal').classList.add('active');
+};
+
+window.closeEditExerciseModal = function() {
+  document.getElementById('editExerciseModal').classList.remove('active');
+  exerciseIndexToEdit = null;
+};
+
+window.saveExerciseModal = function() {
+  const name = document.getElementById('exNameInput').value.trim();
+  const series = document.getElementById('exSeriesInput').value.trim();
+  const reps = document.getElementById('exRepsInput').value.trim();
+  const setsStr = (series || reps) ? `${series} x ${reps}` : '';
+  
+  const wNum = document.getElementById('exWeightInput').value.trim();
+  const wUnit = document.getElementById('exWeightUnit').value;
+  const weightStr = wNum ? `${wNum} ${wUnit}` : '';
+  
+  const link = document.getElementById('exLinkInput').value.trim();
+  
+  if (exerciseIndexToEdit === -1) {
+    // Es un nuevo ejercicio
+    currentExercises.push({
+      id: 'temp-' + Date.now(),
+      name: name,
+      sets: setsStr,
+      weight: weightStr,
+      link: link
+    });
+  } else {
+    // Editar existente
+    const ex = currentExercises[exerciseIndexToEdit];
+    if (ex) {
+      ex.name = name;
+      ex.sets = setsStr;
+      ex.weight = weightStr;
+      ex.link = link;
+    }
+  }
+  
+  closeEditExerciseModal();
+  renderGymExercises();
+};
+
+window.addGymExercise = function() {
+  exerciseIndexToEdit = -1; // -1 significa nuevo
+  document.getElementById('editExerciseModalTitle').textContent = "Añadir Ejercicio";
+  document.getElementById('exNameInput').value = '';
+  document.getElementById('exSeriesInput').value = '';
+  document.getElementById('exRepsInput').value = '';
+  document.getElementById('exWeightInput').value = '';
+  document.getElementById('exWeightUnit').value = 'kg';
+  document.getElementById('exLinkInput').value = '';
+  document.getElementById('editExerciseModal').classList.add('active');
+};
+
+// Modals confirm delete
+window.confirmDeleteExercise = function() {
+  if (exerciseIndexToDelete !== null) {
+    const ex = currentExercises[exerciseIndexToDelete];
+    if (ex) {
+      if (ex.id && !ex.id.toString().startsWith('temp-')) {
+        if (!currentGymExercisesDeleted.includes(ex.id)) {
+          currentGymExercisesDeleted.push(ex.id);
+        }
+      }
+      ex._deleted = true;
+      currentExercises.splice(exerciseIndexToDelete, 1);
+      renderGymExercises();
+    }
+  }
+  cancelDeleteExercise();
+};
+
+window.cancelDeleteExercise = function() {
+  document.getElementById('deleteExerciseModal').classList.remove('active');
+  exerciseIndexToDelete = null;
+  renderGymExercises(); // Reset any dragged cards
+};
 
 window.updateExercise = function(idx, field, value) {
   if (currentExercises[idx]) {
@@ -1071,9 +1209,13 @@ window.updateExercise = function(idx, field, value) {
 
 window.removeExercise = function(idx) {
   const ex = currentExercises[idx];
+  if (!ex) return;
   if (ex.id && !ex.id.toString().startsWith('temp-')) {
-    currentGymExercisesDeleted.push(ex.id);
+    if (!currentGymExercisesDeleted.includes(ex.id)) {
+      currentGymExercisesDeleted.push(ex.id);
+    }
   }
+  ex._deleted = true;
   currentExercises.splice(idx, 1);
   renderGymExercises();
 };
@@ -1132,8 +1274,9 @@ async function closeGymDetail() {
     }
     
     // Upsert current
-    for (let i = 0; i < currentExercises.length; i++) {
-      const ex = currentExercises[i];
+    const exercisesToSave = currentExercises.filter(e => !e._deleted);
+    for (let i = 0; i < exercisesToSave.length; i++) {
+      const ex = exercisesToSave[i];
       if (ex.id && ex.id.toString().startsWith('temp-')) {
         // Insert new
         const { id, ...exData } = ex; // remove temp id
