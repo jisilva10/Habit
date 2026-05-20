@@ -82,7 +82,8 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  // Auto-hide after 10 seconds so user has time to read errors
+  setTimeout(() => t.classList.remove('show'), 10000);
 }
 function greeting() {
   const h = new Date().getHours();
@@ -1184,25 +1185,36 @@ window.deleteExFromModal = function() {
 
 // Modals confirm delete
 window.confirmDeleteExercise = async function() {
-  if (exerciseIndexToDelete !== null) {
-    const ex = currentExercises[exerciseIndexToDelete];
+  const targetIdx = exerciseIndexToDelete;
+  // Close modal immediately for snappy UI
+  cancelDeleteExercise();
+  
+  if (targetIdx !== null) {
+    const ex = currentExercises[targetIdx];
     if (ex) {
       if (ex.id && !ex.id.toString().startsWith('temp-')) {
-        // Delete directly from Supabase to prevent data loss if user exits without saving
         try {
+          showToast('Borrando...');
           await sb(`gym_exercises?id=eq.${ex.id}`, { method: 'DELETE', prefer: 'return=minimal' });
           gymExercisesData = gymExercisesData.filter(e => e.id !== ex.id);
+          showToast('Borrado exitoso');
         } catch (e) {
           console.error(e);
           showToast('Error borrando: ' + e.message);
+          return; // Do NOT delete locally if DB delete failed
         }
       }
+      
+      // Only remove locally if DB was successful or it was just a temp exercise
       ex._deleted = true;
-      currentExercises.splice(exerciseIndexToDelete, 1);
+      // We must find the new index because splice mutates the array
+      const currentIdx = currentExercises.indexOf(ex);
+      if (currentIdx !== -1) {
+        currentExercises.splice(currentIdx, 1);
+      }
       renderGymExercises();
     }
   }
-  cancelDeleteExercise();
 };
 
 window.cancelDeleteExercise = function() {
