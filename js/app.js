@@ -1225,8 +1225,6 @@ window.removeExercise = function(idx) {
   renderGymExercises();
 };
 
-  }, 50);
-};
 
 function toggleGymEditMode() {
   // Not needed anymore, replaced by the new exercise UI
