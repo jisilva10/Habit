@@ -309,8 +309,7 @@
     <label class="field-label">Ícono</label>
     <div class="emoji-grid" id="editEmojiGrid"></div>
     <input class="field-input emoji-input" id="editCustomEmoji" type="text" placeholder="O escribe tu propio emoji…" maxlength="4" autocomplete="off">
-    <button class="primary-btn" id="submitEdit" onclick="submitEditHabit()">Guardar cambios</button>
-    <button class="ghost-btn" onclick="closeEditModal()">Cancelar</button>
+    <button class="primary-btn" onclick="closeEditModal()">Cerrar</button>
   </div>
 </div>
 
@@ -393,7 +392,7 @@
     <label class="field-label" for="exLinkInput">Video / Link (opcional)</label>
     <input class="field-input" id="exLinkInput" type="url" placeholder="https://youtube.com/..." autocomplete="off">
     
-    <button class="primary-btn" id="saveExerciseBtn" onclick="saveExerciseModal()">Guardar Ejercicio</button>
+    <button class="primary-btn" onclick="closeEditExerciseModal()">Cerrar</button>
   </div>
 </div>
 

@@ -366,8 +366,6 @@ async function markDay(val) {
     allData = allData.filter(l => !(l.habit_id === currentKey && l.fecha === selDate));
     renderActionBtn();
     renderDetail();
-    renderHome();
-    showToast('Sin dato — registro eliminado');
     try {
       await sb(`logs?habit_id=eq.${currentKey}&fecha=eq.${selDate}`, {
         method: 'DELETE',
@@ -382,13 +380,11 @@ async function markDay(val) {
 
   // Optimistic UI update
   const existing = allData.find(l => l.habit_id === currentKey && l.fecha === selDate);
-  if (existing) existing.value = val;
+  if (existing)  existing.value = val;
   else allData.push({ habit_id: currentKey, fecha: selDate, value: val });
 
   renderActionBtn();
   renderDetail();
-  renderHome();
-  showToast(val === 1 ? '¡Marcado! ✓' : 'No hecho');
 
   // Persist — on_conflict especifica la restricción unique (habit_id, fecha)
   try {
@@ -497,7 +493,7 @@ function renderChart() {
   const logs = allData.filter(l => l.habit_id === currentKey);
   const today = todayStr();
   const ctx   = document.getElementById('weekChart').getContext('2d');
-  if (wChart) wChart.destroy();
+  // Removed wChart.destroy(); wChart will be updated inline
 
   let labels, counts, isCurrent, maxY, tooltipLabel;
 
@@ -569,72 +565,97 @@ function renderChart() {
   const bgs    = counts.map((c,i) => chartColors(c, isCurrent[i], chartMode === 'days' ? 1 : maxY).fill);
   const bds    = counts.map((c,i) => chartColors(c, isCurrent[i], chartMode === 'days' ? 1 : maxY).stroke);
 
-  wChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        data:            counts,
-        backgroundColor: bgs,
-        borderColor:     bds,
-        borderWidth:     1.5,
-        borderRadius:    6,
-        borderSkipped:   false,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            title: items => {
-              const i = items[0].dataIndex;
-              return isCurrent[i] ? `${labels[i]}  (en curso)` : labels[i];
+  if (wChart) {
+    wChart.data.labels = labels;
+    wChart.data.datasets[0].data = counts;
+    wChart.data.datasets[0].backgroundColor = bgs;
+    wChart.data.datasets[0].borderColor = bds;
+    
+    wChart.options.scales.y.max = chartMode === 'days' ? 1 : maxY;
+    wChart.options.scales.x.ticks.maxRotation = chartMode === 'days' ? 45 : 0;
+    wChart.options.scales.x.ticks.maxTicksLimit = chartMode === 'days' ? 12 : 24;
+    
+    wChart.options.plugins.tooltip.callbacks.title = items => {
+      const i = items[0].dataIndex;
+      return isCurrent[i] ? `${labels[i]}  (en curso)` : labels[i];
+    };
+    wChart.options.plugins.tooltip.callbacks.label = tooltipLabel;
+    
+    wChart.options.scales.y.ticks.callback = v => {
+      if (chartMode === 'days') return v === 1 ? '✓' : '';
+      if (v === maxY) return `${maxY} ✓`;
+      return v === 0 ? '' : String(v);
+    };
+    
+    wChart.update();
+  } else {
+    wChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data:            counts,
+          backgroundColor: bgs,
+          borderColor:     bds,
+          borderWidth:     1.5,
+          borderRadius:    6,
+          borderSkipped:   false,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: items => {
+                const i = items[0].dataIndex;
+                return isCurrent[i] ? `${labels[i]}  (en curso)` : labels[i];
+              },
+              label: tooltipLabel,
             },
-            label: tooltipLabel,
+            backgroundColor: '#111110',
+            titleColor:      '#F4F2EF',
+            bodyColor:       '#A39F97',
+            padding:         10,
+            cornerRadius:    8,
+            displayColors:   false,
+            titleFont: { family: 'Inter', weight: '600', size: 12 },
+            bodyFont:  { family: 'DM Mono', size: 13 },
           },
-          backgroundColor: '#111110',
-          titleColor:      '#F4F2EF',
-          bodyColor:       '#A39F97',
-          padding:         10,
-          cornerRadius:    8,
-          displayColors:   false,
-          titleFont: { family: 'Inter', weight: '600', size: 12 },
-          bodyFont:  { family: 'DM Mono', size: 13 },
+        },
+        scales: {
+          y: {
+            min: 0,
+            max: chartMode === 'days' ? 1 : maxY,
+            ticks: {
+              stepSize: chartMode === 'days' ? 1 : 1,
+              font:     { size: 10, family: 'DM Mono' },
+              color:    '#A39F97',
+              callback: v => {
+                if (chartMode === 'days') return v === 1 ? '✓' : '';
+                if (v === maxY) return `${maxY} ✓`;
+                return v === 0 ? '' : String(v);
+              },
+            },
+            grid:   { color: 'rgba(17,17,16,0.04)', drawTicks: false },
+            border: { display: false },
+          },
+          x: {
+            ticks: {
+              font:        { size: 9, family: 'DM Mono' },
+              color:       '#A39F97',
+              maxRotation: chartMode === 'days' ? 45 : 0,
+              maxTicksLimit: chartMode === 'days' ? 12 : 24,
+            },
+            grid:   { display: false },
+            border: { display: false },
+          },
         },
       },
-      scales: {
-        y: {
-          min: 0,
-          max: chartMode === 'days' ? 1 : maxY,
-          ticks: {
-            stepSize: chartMode === 'days' ? 1 : 1,
-            font:     { size: 10, family: 'DM Mono' },
-            color:    '#A39F97',
-            callback: v => {
-              if (chartMode === 'days') return v === 1 ? '✓' : '';
-              if (v === maxY) return `${maxY} ✓`;
-              return v === 0 ? '' : String(v);
-            },
-          },
-          grid:   { color: 'rgba(17,17,16,0.04)', drawTicks: false },
-          border: { display: false },
-        },
-        x: {
-          ticks: {
-            font:        { size: 9, family: 'DM Mono' },
-            color:       '#A39F97',
-            maxRotation: chartMode === 'days' ? 45 : 0,
-            maxTicksLimit: chartMode === 'days' ? 12 : 24,
-          },
-          grid:   { display: false },
-          border: { display: false },
-        },
-      },
-    },
-  });
+    });
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -651,8 +672,8 @@ function buildEmojiGrid(gridId, inputId, onSelect) {
       document.getElementById(inputId).value = '';
       grid.querySelectorAll('.em-opt').forEach(x => x.classList.remove('sel'));
       b.classList.add('sel');
-      if (gridId === 'emojiGrid') selEmoji   = em;
-      else                        editEmoji  = em;
+      if (gridId === 'emojiGrid') { selEmoji = em; }
+      else { editEmoji = em; if (typeof triggerHabitAutoSave === 'function') triggerHabitAutoSave(); }
     };
     grid.appendChild(b);
   });
@@ -660,8 +681,8 @@ function buildEmojiGrid(gridId, inputId, onSelect) {
     const v = this.value.trim();
     if (v) {
       grid.querySelectorAll('.em-opt').forEach(x => x.classList.remove('sel'));
-      if (gridId === 'emojiGrid') selEmoji   = v;
-      else                        editEmoji  = v;
+      if (gridId === 'emojiGrid') { selEmoji = v; }
+      else { editEmoji = v; if (typeof triggerHabitAutoSave === 'function') triggerHabitAutoSave(); }
     }
   };
 }
@@ -722,45 +743,43 @@ function openEditModal() {
     if (btn.textContent === h.emoji) btn.classList.add('sel');
   });
 
-  const btn = document.getElementById('submitEdit');
-  btn.disabled = false; btn.textContent = 'Guardar cambios';
   document.getElementById('editModal').classList.add('open');
   document.body.classList.add('no-scroll');
   setTimeout(() => document.getElementById('editHabitName').focus(), 370);
+  
+  setupHabitEditAutoSave();
 }
 function closeEditModal() {
   document.getElementById('editModal').classList.remove('open');
   document.body.classList.remove('no-scroll');
 }
 
-async function submitEditHabit() {
+let editHabitTimeout;
+function setupHabitEditAutoSave() {
+  const nameInput = document.getElementById('editHabitName');
+  const emojiInput = document.getElementById('editCustomEmoji');
+  nameInput.oninput = triggerHabitAutoSave;
+  emojiInput.oninput = triggerHabitAutoSave;
+}
+
+function triggerHabitAutoSave() {
   const name  = document.getElementById('editHabitName').value.trim();
   const emoji = document.getElementById('editCustomEmoji').value.trim() || editEmoji;
-  if (!name) { showToast('Escribe un nombre'); return; }
+  if (!name || !editHabitId) return;
 
-  const btn = document.getElementById('submitEdit');
-  btn.disabled = true; btn.textContent = 'Guardando…';
+  const h = habits.find(x => x.id === editHabitId);
+  if (h) { h.name = name; h.emoji = emoji; }
+  document.getElementById('detailEmoji').textContent = emoji;
+  document.getElementById('detailTitle').textContent = name;
 
-  try {
-    await sb(`habits?id=eq.${editHabitId}`, {
+  clearTimeout(editHabitTimeout);
+  editHabitTimeout = setTimeout(() => {
+    sb(`habits?id=eq.${editHabitId}`, {
       method: 'PATCH',
       prefer: 'return=representation',
       body:   { name, emoji },
-    });
-    // Update local state
-    const h = habits.find(x => x.id === editHabitId);
-    if (h) { h.name = name; h.emoji = emoji; }
-    // Update detail header
-    document.getElementById('detailEmoji').textContent = emoji;
-    document.getElementById('detailTitle').textContent = name;
-    closeEditModal();
-    renderHome();
-    showToast('Hábito actualizado ✓');
-  } catch (e) {
-    showToast('Error al guardar');
-    console.error(e);
-    btn.disabled = false; btn.textContent = 'Guardar cambios';
-  }
+    }).catch(e => console.error('Auto-save error:', e));
+  }, 500);
 }
 
 // ══════════════════════════════════════════════════════
@@ -1120,14 +1139,25 @@ window.openEditExerciseModal = function(idx) {
   // The delete button in the edit modal is hidden, as we now delete from the Action Sheet.
   document.getElementById('deleteExFromModalBtn').style.display = 'none';
   document.getElementById('editExerciseModal').classList.add('open');
+  
+  setupGymExerciseAutoSave();
 };
 
 window.closeEditExerciseModal = function() {
   document.getElementById('editExerciseModal').classList.remove('open');
   exerciseIndexToEdit = null;
+  renderGymExercises();
 };
 
-window.saveExerciseModal = function() {
+function setupGymExerciseAutoSave() {
+  const ids = ['exNameInput', 'exSeriesInput', 'exRepsInput', 'exWeightInput', 'exWeightUnit', 'exLinkInput'];
+  ids.forEach(id => {
+    document.getElementById(id).oninput = triggerGymExerciseAutoSave;
+  });
+}
+
+function triggerGymExerciseAutoSave() {
+  if (exerciseIndexToEdit === null || exerciseIndexToEdit === -1) return;
   const name = document.getElementById('exNameInput').value.trim();
   const series = document.getElementById('exSeriesInput').value.trim();
   const reps = document.getElementById('exRepsInput').value.trim();
@@ -1139,32 +1169,24 @@ window.saveExerciseModal = function() {
   
   const link = document.getElementById('exLinkInput').value.trim();
   
-  if (exerciseIndexToEdit === -1) {
-    // Es un nuevo ejercicio
-    currentExercises.push({
-      id: 'temp-' + Date.now(),
-      name: name,
-      sets: setsStr,
-      weight: weightStr,
-      link: link
-    });
-  } else {
-    // Editar existente
-    const ex = currentExercises[exerciseIndexToEdit];
-    if (ex) {
-      ex.name = name;
-      ex.sets = setsStr;
-      ex.weight = weightStr;
-      ex.link = link;
-    }
+  const ex = currentExercises[exerciseIndexToEdit];
+  if (ex) {
+    ex.name = name;
+    ex.sets = setsStr;
+    ex.weight = weightStr;
+    ex.link = link;
   }
-  
-  closeEditExerciseModal();
-  renderGymExercises();
-};
+}
 
 window.addGymExercise = function() {
-  exerciseIndexToEdit = -1; // -1 significa nuevo
+  currentExercises.push({
+    id: 'temp-' + Date.now(),
+    name: '',
+    sets: '',
+    weight: '',
+    link: ''
+  });
+  exerciseIndexToEdit = currentExercises.length - 1;
   document.getElementById('editExerciseModalTitle').textContent = "Añadir Ejercicio";
   document.getElementById('exNameInput').value = '';
   document.getElementById('exSeriesInput').value = '';
@@ -1174,6 +1196,8 @@ window.addGymExercise = function() {
   document.getElementById('exLinkInput').value = '';
   document.getElementById('deleteExFromModalBtn').style.display = 'none';
   document.getElementById('editExerciseModal').classList.add('open');
+  
+  setupGymExerciseAutoSave();
 };
 
 // Delete exercise from within edit modal
@@ -1253,67 +1277,94 @@ async function closeGymDetail() {
   document.getElementById('gymDetail').classList.remove('active');
   document.getElementById('gym').classList.add('active');
   
-  // Auto-save on back
   const titleVal = document.getElementById('gymDetailTitle').value.trim();
   let dayToSave = gymDays.find(d => d.routine_id === selectedRoutineId && d.day_index === editDayIndex);
   
-  try {
-    showToast('Guardando...');
-    // 1. Create or Update Day
-    if (dayToSave) {
-      if (dayToSave.title !== titleVal) {
-        await sb(`gym_days?id=eq.${dayToSave.id}`, { method: 'PATCH', body: { title: titleVal } });
-        dayToSave.title = titleVal;
-      }
-    } else {
-      const res = await sb('gym_days', { method: 'POST', body: { routine_id: selectedRoutineId, day_index: editDayIndex, title: titleVal, content: '' } });
-      gymDays.push(res[0]);
-      dayToSave = res[0];
-    }
-    
-    // 2. Save Exercises
-    const dayId = dayToSave.id;
-    
-    // Delete removed
-    if (currentGymExercisesDeleted.length > 0) {
-      await sb(`gym_exercises?id=in.(${currentGymExercisesDeleted.join(',')})`, { method: 'DELETE', prefer: 'return=minimal' });
-      gymExercisesData = gymExercisesData.filter(e => !currentGymExercisesDeleted.includes(e.id));
-    }
-    
-    // Upsert current
-    const exercisesToSave = currentExercises.filter(e => !e._deleted);
-    for (let i = 0; i < exercisesToSave.length; i++) {
-      const ex = exercisesToSave[i];
-      if (ex.id && ex.id.toString().startsWith('temp-')) {
-        // Insert new
-        const { id, ...exData } = ex; // remove temp id
-        const res = await sb('gym_exercises', { 
-          method: 'POST', 
-          body: { day_id: dayId, name: ex.name, sets: ex.sets, weight: ex.weight || '', link: ex.link, order_index: i } 
-        });
-        gymExercisesData.push(res[0]);
-      } else {
-        // Update existing
-        await sb(`gym_exercises?id=eq.${ex.id}`, { 
-          method: 'PATCH', 
-          body: { name: ex.name, sets: ex.sets, weight: ex.weight || '', link: ex.link, order_index: i } 
-        });
-        const localEx = gymExercisesData.find(e => e.id === ex.id);
-        if (localEx) {
-          localEx.name = ex.name; localEx.sets = ex.sets; localEx.weight = ex.weight || ''; localEx.link = ex.link; localEx.order_index = i;
-        }
-      }
-    }
+  const savedEditDayIndex = editDayIndex;
+  const savedExercises = currentExercises.filter(e => !e._deleted);
+  const deletedExerciseIds = [...currentGymExercisesDeleted];
+  const rId = selectedRoutineId;
 
-  } catch(e) {
-    console.error(e);
-    showToast('Error: ' + e.message);
-  }
-
+  // Optimistically clear state and render UI
   editDayIndex = null;
   currentExercises = [];
   currentGymExercisesDeleted = [];
+  
+  if (dayToSave) {
+    dayToSave.title = titleVal;
+  } else {
+    dayToSave = { id: 'temp-day', routine_id: rId, day_index: savedEditDayIndex, title: titleVal, content: '' };
+    gymDays.push(dayToSave);
+  }
+  
+  // Optimistically update gymExercisesData
+  if (deletedExerciseIds.length > 0) {
+    gymExercisesData = gymExercisesData.filter(e => !deletedExerciseIds.includes(e.id));
+  }
+  
+  savedExercises.forEach((ex, i) => {
+    const localEx = gymExercisesData.find(e => e.id === ex.id);
+    if (localEx) {
+      localEx.name = ex.name; localEx.sets = ex.sets; localEx.weight = ex.weight || ''; localEx.link = ex.link; localEx.order_index = i;
+    } else {
+      gymExercisesData.push({
+        id: ex.id,
+        day_id: dayToSave.id,
+        name: ex.name, sets: ex.sets, weight: ex.weight || '', link: ex.link, order_index: i
+      });
+    }
+  });
+
   renderGym();
+
+  // Background Sync
+  (async () => {
+    try {
+      let dayId = dayToSave.id;
+      if (dayId === 'temp-day') {
+        const res = await sb('gym_days', { method: 'POST', body: { routine_id: rId, day_index: savedEditDayIndex, title: titleVal, content: '' } });
+        const idx = gymDays.findIndex(d => d.id === 'temp-day');
+        if (idx !== -1) gymDays[idx] = res[0];
+        dayId = res[0].id;
+        // Update optimistically added exercises with new day_id
+        gymExercisesData.forEach(e => { if (e.day_id === 'temp-day') e.day_id = dayId; });
+      } else {
+        await sb(`gym_days?id=eq.${dayId}`, { method: 'PATCH', body: { title: titleVal } });
+      }
+      
+      const promises = [];
+      if (deletedExerciseIds.length > 0) {
+        promises.push(sb(`gym_exercises?id=in.(${deletedExerciseIds.join(',')})`, { method: 'DELETE', prefer: 'return=minimal' }));
+      }
+      
+      for (let i = 0; i < savedExercises.length; i++) {
+        const ex = savedExercises[i];
+        if (ex.id && ex.id.toString().startsWith('temp-')) {
+          promises.push(
+            sb('gym_exercises', { 
+              method: 'POST', 
+              body: { day_id: dayId, name: ex.name, sets: ex.sets, weight: ex.weight || '', link: ex.link, order_index: i } 
+            }).then(res => {
+              const newEx = res[0];
+              const localIdx = gymExercisesData.findIndex(e => e.id === ex.id);
+              if (localIdx !== -1) gymExercisesData[localIdx] = newEx;
+            })
+          );
+        } else {
+          promises.push(
+            sb(`gym_exercises?id=eq.${ex.id}`, { 
+              method: 'PATCH', 
+              body: { name: ex.name, sets: ex.sets, weight: ex.weight || '', link: ex.link, order_index: i } 
+            })
+          );
+        }
+      }
+
+      await Promise.all(promises);
+    } catch(e) {
+      console.error('Background sync error:', e);
+    }
+  })();
 }
 
 async function markGymDay(val) {
@@ -1391,42 +1442,45 @@ function renderGymChart() {
   const labels = weeks.map(w => w.label);
   const counts = weeks.map(w => w.done);
   
-  const ctx = document.getElementById('gymChart').getContext('2d');
-  if (gymChartInstance) gymChartInstance.destroy();
-
-  const maxDays = routine.days_count;
-  const bgs = counts.map(c => c === maxDays ? 'rgba(34,197,94,0.12)' : c > 0 ? 'rgba(202,138,4,0.12)' : 'rgba(17,17,16,0.05)');
-  const bds = counts.map(c => c === maxDays ? 'rgba(34,197,94,0.7)' : c > 0 ? 'rgba(202,138,4,0.7)' : 'rgba(17,17,16,0.15)');
-
-  gymChartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        data: counts,
-        backgroundColor: bgs,
-        borderColor: bds,
-        borderWidth: 1.5,
-        borderRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: {
-          min: 0,
-          max: maxDays,
-          ticks: { stepSize: 1, color: '#A39F97', font: { family: 'DM Mono', size: 10 } },
-          grid: { color: 'rgba(17,17,16,0.04)' }
-        },
-        x: {
-          ticks: { color: '#A39F97', font: { family: 'DM Mono', size: 9 }, maxRotation: 45 }
+  if (gymChartInstance) {
+    gymChartInstance.data.labels = labels;
+    gymChartInstance.data.datasets[0].data = counts;
+    gymChartInstance.data.datasets[0].backgroundColor = bgs;
+    gymChartInstance.data.datasets[0].borderColor = bds;
+    gymChartInstance.options.scales.y.max = maxDays;
+    gymChartInstance.update();
+  } else {
+    const ctx = document.getElementById('gymChart').getContext('2d');
+    gymChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data: counts,
+          backgroundColor: bgs,
+          borderColor: bds,
+          borderWidth: 1.5,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            min: 0,
+            max: maxDays,
+            ticks: { stepSize: 1, color: '#A39F97', font: { family: 'DM Mono', size: 10 } },
+            grid: { color: 'rgba(17,17,16,0.04)' }
+          },
+          x: {
+            ticks: { color: '#A39F97', font: { family: 'DM Mono', size: 9 }, maxRotation: 45 }
+          }
         }
       }
-    }
-  });
+    });
+  }
 }
 
 // ══════════════════════════════════════════════════════
