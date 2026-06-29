@@ -829,7 +829,7 @@ function getGymLogValue(routineId, dayIndex, weekId) {
   return log ? log.status : undefined;
 }
 
-function renderGym() {
+function renderGym(animate = true) {
   const scroll = document.getElementById('gymRoutinesScroll');
   if(!scroll) return;
   scroll.innerHTML = '';
@@ -883,8 +883,8 @@ function renderGym() {
     const isMiss = status === 0;
 
     const card = document.createElement('div');
-    card.className = `habit-card animate-entry ${isDone ? 'status-done' : isMiss ? 'status-miss' : ''}`;
-    card.style.animationDelay = `${i * 0.05}s`;
+    card.className = `habit-card ${animate ? 'animate-entry' : ''} ${isDone ? 'status-done' : isMiss ? 'status-miss' : ''}`;
+    if (animate) card.style.animationDelay = `${i * 0.05}s`;
 
     const safeTitle = title.replace(/'/g, "\\'");
     const safeContent = content.replace(/`/g, '\\`').replace(/'/g, "\\'");
@@ -1315,7 +1315,7 @@ async function closeGymDetail() {
     }
   });
 
-  renderGym();
+  renderGym(false);
 
   // Background Sync
   (async () => {
